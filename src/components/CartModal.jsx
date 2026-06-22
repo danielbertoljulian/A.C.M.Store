@@ -35,7 +35,7 @@ const CartModal = ({ cart, onClose, onRemove, onClear, addToCart, decrementCart 
 
   const handleQuote = () => {
     const lines = cart.map((item, idx) =>
-      `${idx + 1}. ${item.product.name} — ${item.product.brand} (${item.quantity} unid.)\n   https://acmstore.vercel.app/?p=${item.product.id}`
+      `${idx + 1}. ${item.product.name} — ${item.product.brand} (${item.quantity} unid.)\n   https://a-c-m-store.vercel.app/?p=${item.product.id}`
     );
     const msg = encodeURIComponent(
       `Ola! Vim pelo site A.C.M Store. Gostaria de solicitar orcamento para os seguintes produtos:\n\n${lines.join('\n')}\n\n📦 Envio para todo o Brasil\n🛒 Parcelamento em ate 6x sem juros`
