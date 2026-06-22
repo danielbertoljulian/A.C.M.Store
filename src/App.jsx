@@ -132,16 +132,13 @@ function App() {
         <About />
         <Contact />
       </main>
-      <div style={{
-        background: '#070707',
-        padding: '2rem 0',
-        borderTop: '1px solid var(--glass-border)',
-        textAlign: 'center',
-        fontSize: '0.8rem',
-        color: '#A7A7A0'
-      }}>
-        <p style={{ marginBottom: '0.5rem', color: '#D6B56D', letterSpacing: '0.1em', textTransform: 'uppercase' }}>®️ Somente produtos originais | 📦 Envio p/ todo Brasil | 🛒 6x sem juros</p>
-        <p>© 2026 A.C.M Store. Todos os direitos reservados.</p>
+      <div style={{ textAlign: 'center', padding: '2rem 0', borderTop: '1px solid var(--glass-border)' }}>
+        <a href="https://fractalsys.vercel.app/" target="_blank" rel="noopener noreferrer">
+          <img src="/powered_fractalsys.png" alt="Powered by FractalSys" style={{ maxWidth: '180px', height: 'auto', opacity: 0.8, transition: 'opacity 0.3s ease' }}
+            onMouseEnter={(e) => e.currentTarget.style.opacity = '1'}
+            onMouseLeave={(e) => e.currentTarget.style.opacity = '0.8'}
+          />
+        </a>
       </div>
       <Footer />
       {selectedProduct && !showCart && (

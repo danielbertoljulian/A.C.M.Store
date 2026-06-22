@@ -54,12 +54,6 @@ const Contact = () => {
             </div>
           </div>
 
-          <a href="https://fractalsys.vercel.app/" target="_blank" rel="noopener noreferrer" style={{ display: 'block', marginTop: '1.5rem', textAlign: mobile ? 'center' : 'left' }}>
-            <img src="/powered_fractalsys.png" alt="Powered by FractalSys" style={{ maxWidth: '180px', height: 'auto', opacity: 0.8, transition: 'opacity 0.3s ease' }}
-              onMouseEnter={(e) => e.currentTarget.style.opacity = '1'}
-              onMouseLeave={(e) => e.currentTarget.style.opacity = '0.8'}
-            />
-          </a>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
