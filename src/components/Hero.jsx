@@ -60,7 +60,7 @@ const Hero = () => {
             marginBottom: '1rem',
             letterSpacing: '0.05em'
           }}>
-            Moda masculina premium. Qualidade e estilo para quem aprecia o melhor.
+            As melhores marcas, para quem tem estilo.
           </p>
 
           <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '1rem', marginBottom: '2.5rem' }}>

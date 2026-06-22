@@ -1,8 +1,14 @@
 import { neon } from '@neondatabase/serverless';
+import { config } from 'dotenv';
 import { isAdmin } from './_auth.js';
+
+config({ path: '.env.local', quiet: true });
 
 function getDb() {
   const url = process.env.DATABASE_URL || process.env.POSTGRES_URL || process.env.NEON_DATABASE_URL;
+  if (!url) {
+    throw new Error('DATABASE_URL is not configured. Set DATABASE_URL in .env.local and restart the dev server.');
+  }
   return neon(url);
 }
 

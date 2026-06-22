@@ -1,9 +1,11 @@
 import React from 'react';
+import InstagramCarousel from './InstagramCarousel';
 
 const About = () => {
   return (
     <section id="sobre" className="section-padding" style={{ background: '#111315' }}>
       <div className="container" style={{ textAlign: 'center', maxWidth: '800px' }}>
+        <InstagramCarousel />
         <h2 className="section-title">
           <span>Nossa Historia</span>
           A A.C.M Store

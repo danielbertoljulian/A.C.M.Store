@@ -15,6 +15,18 @@ function isValidSrc(src) {
   return src.startsWith('data:image/') || src.startsWith('http') || src.startsWith('/');
 }
 
+function toInstagramEmbedUrl(url) {
+  try {
+    const parsed = new URL(url);
+    if (!parsed.hostname.includes('instagram.com')) return '';
+    const cleanPath = parsed.pathname.replace(/\/+$/, '');
+    if (!/^\/(p|reel|tv)\//.test(cleanPath)) return '';
+    return `https://www.instagram.com${cleanPath}/embed`;
+  } catch {
+    return '';
+  }
+}
+
 const ProductDetail = ({ product, onClose, addToCart }) => {
   const [mobile, setMobile] = useState(window.innerWidth <= 768);
   const [qty, setQty] = useState(1);
@@ -38,14 +50,19 @@ const ProductDetail = ({ product, onClose, addToCart }) => {
     };
   }, []);
 
-  const [imgIdx, setImgIdx] = useState(0);
+  const [mediaIdx, setMediaIdx] = useState(0);
   const touchStartX = React.useRef(null);
+
+  useEffect(() => {
+    setMediaIdx(0);
+  }, [product?.id]);
 
   useEffect(() => {
     const onKey = (e) => {
       if (e.key === 'Escape') { onClose(); return; }
-      if (e.key === 'ArrowLeft') setImgIdx(i => Math.max(0, i - 1));
-      if (e.key === 'ArrowRight') setImgIdx(i => Math.min((getImageList(product).length - 1), i + 1));
+      const total = getImageList(product).length + (toInstagramEmbedUrl(product.instagram_video || '') ? 1 : 0);
+      if (e.key === 'ArrowLeft') setMediaIdx(i => Math.max(0, i - 1));
+      if (e.key === 'ArrowRight') setMediaIdx(i => Math.min(total - 1, i + 1));
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
@@ -54,6 +71,12 @@ const ProductDetail = ({ product, onClose, addToCart }) => {
   if (!product) return null;
 
   const images = getImageList(product);
+  const instagramEmbed = toInstagramEmbedUrl(product.instagram_video || '');
+  const media = [
+    ...images.map(src => ({ type: 'image', src })),
+    ...(instagramEmbed ? [{ type: 'video', src: instagramEmbed }] : [])
+  ];
+  const currentMedia = media[mediaIdx];
   const specs = [
     { label: 'Tamanho', value: product.width },
     { label: 'Cor', value: product.colors },
@@ -93,43 +116,73 @@ const ProductDetail = ({ product, onClose, addToCart }) => {
             if (touchStartX.current === null) return;
             const diff = touchStartX.current - e.changedTouches[0].clientX;
             if (Math.abs(diff) > 40) {
-              if (diff > 0) setImgIdx(i => Math.min(images.length - 1, i + 1));
-              else setImgIdx(i => Math.max(0, i - 1));
+              if (diff > 0) setMediaIdx(i => Math.min(media.length - 1, i + 1));
+              else setMediaIdx(i => Math.max(0, i - 1));
             }
             touchStartX.current = null;
           }}
         >
           <div style={{ height: mobile ? '250px' : '350px', background: '#111315', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem', position: 'relative' }}>
-            <img
-              src={isValidSrc(images[imgIdx]) ? images[imgIdx] : ''}
-              alt={product.name}
-              style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
-              onError={e => { e.currentTarget.style.display = 'none'; }}
-            />
+            {currentMedia?.type === 'video' ? (
+              <div style={{
+                position: 'relative',
+                height: '100%',
+                aspectRatio: '9 / 16',
+                maxWidth: '100%',
+                borderRadius: '8px',
+                overflow: 'hidden',
+                border: '1px solid #2A2D33',
+                background: '#000'
+              }}>
+                <iframe
+                  src={currentMedia.src}
+                  title={`Video do produto ${product.name}`}
+                  allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
+                  sandbox="allow-scripts allow-same-origin allow-presentation"
+                  allowFullScreen
+                  style={{
+                    position: 'absolute',
+                    left: 0,
+                    top: mobile ? '-48px' : '-58px',
+                    width: '100%',
+                    height: mobile ? 'calc(100% + 96px)' : 'calc(100% + 116px)',
+                    border: 0,
+                    display: 'block'
+                  }}
+                />
+              </div>
+            ) : (
+              <img
+                src={isValidSrc(currentMedia?.src) ? currentMedia.src : ''}
+                alt={product.name}
+                style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
+                onError={e => { e.currentTarget.style.display = 'none'; }}
+              />
+            )}
             {product.off && parseInt(product.off) > 0 && (
               <span style={{ position: 'absolute', top: '10px', left: '10px', background: '#D6B56D', color: '#070707', padding: '4px 12px', borderRadius: '6px', fontSize: '0.9rem', fontWeight: 'bold', zIndex: 2 }}>{product.off}%OFF</span>
             )}
           </div>
-          {images.length > 1 && (
+          {media.length > 1 && (
             <div style={{ position: 'absolute', bottom: '10px', left: 0, right: 0, display: 'flex', justifyContent: 'center', gap: '0.5rem' }}>
-              {images.map((_, i) => (
-                <button key={i} onClick={() => setImgIdx(i)} style={{
+              {media.map((item, i) => (
+                <button key={`${item.type}-${i}`} onClick={() => setMediaIdx(i)} title={item.type === 'video' ? 'Video' : `Foto ${i + 1}`} style={{
                   width: '10px', height: '10px', borderRadius: '50%', border: 'none',
-                  background: i === imgIdx ? '#D6B56D' : '#2A2D33',
+                  background: i === mediaIdx ? '#D6B56D' : '#2A2D33',
                   cursor: 'pointer', padding: 0
                 }} />
               ))}
             </div>
           )}
-          {images.length > 1 && imgIdx > 0 && (
-            <button onClick={() => setImgIdx(i => i - 1)} style={{
+          {media.length > 1 && mediaIdx > 0 && (
+            <button onClick={() => setMediaIdx(i => i - 1)} style={{
               position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)',
               background: 'rgba(0,0,0,0.5)', border: 'none', color: 'white', width: '30px',
               height: '30px', borderRadius: '50%', cursor: 'pointer', fontSize: '1rem'
             }}>‹</button>
           )}
-          {images.length > 1 && imgIdx < images.length - 1 && (
-            <button onClick={() => setImgIdx(i => i + 1)} style={{
+          {media.length > 1 && mediaIdx < media.length - 1 && (
+            <button onClick={() => setMediaIdx(i => i + 1)} style={{
               position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)',
               background: 'rgba(0,0,0,0.5)', border: 'none', color: 'white', width: '30px',
               height: '30px', borderRadius: '50%', cursor: 'pointer', fontSize: '1rem'

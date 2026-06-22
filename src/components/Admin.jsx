@@ -272,6 +272,7 @@ function Admin() {
               { key: 'relatorios', label: 'Relatorios' },
               { key: 'arte', label: 'Criar Arte' },
               { key: 'orcamento', label: 'Orcamento' },
+              { key: 'instagram', label: 'Instagram' },
               { key: 'ajustes', label: 'Ajustes' },
             ].map(t => (
               <button key={t.key} onClick={() => setTab(t.key)} style={{ flex: mobile ? '1' : 'unset', background: tab === t.key ? '#D6B56D' : 'transparent', border: '1px solid #D6B56D', color: tab === t.key ? '#070707' : '#D6B56D', padding: '0.6rem 1rem', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '0.9rem' }}>{t.label}</button>
@@ -285,6 +286,8 @@ function Admin() {
           <ArtGenerator mobile={mobile} products={products} />
         ) : tab === 'orcamento' ? (
           <BudgetGenerator mobile={mobile} products={products} />
+        ) : tab === 'instagram' ? (
+          <InstagramAdminView mobile={mobile} headers={headers} />
         ) : tab === 'ajustes' ? (
           <SettingsView bgHue={bgHue} setBgHue={setBgHue} bgSat={bgSat} setBgSat={setBgSat} bgLight={bgLight} setBgLight={setBgLight} mobile={mobile} headers={headers} />
         ) : (
@@ -528,6 +531,15 @@ function ProductForm({ product, onSave, onUpload, onCancel, mobile, categories }
         <input placeholder="Preco (ex: 299,00)" value={form.price || ''} onChange={e => setForm(f => ({ ...f, price: e.target.value }))} style={inputStyle} />
         <input placeholder="OFF (%)" value={form.off || ''} onChange={e => setForm(f => ({ ...f, off: e.target.value }))} style={inputStyle} />
         <div style={{ gridColumn: '1 / -1' }}>
+          <label style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem', display: 'block', marginBottom: '0.3rem' }}>Video do Instagram</label>
+          <input
+            placeholder="Link do Reel, post ou video do Instagram"
+            value={form.instagram_video || ''}
+            onChange={e => setForm(f => ({ ...f, instagram_video: e.target.value }))}
+            style={inputStyle}
+          />
+        </div>
+        <div style={{ gridColumn: '1 / -1' }}>
           <label style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem', display: 'block', marginBottom: '0.5rem' }}>Fotos do Produto</label>
           <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.5rem' }}>
             {imageList.map((url, idx) => (
@@ -557,7 +569,12 @@ function ProductForm({ product, onSave, onUpload, onCancel, mobile, categories }
             return;
           }
           const imgs = getImageList(form);
-          onSave({ ...form, image: imgs[0] || '', images: JSON.stringify(imgs) });
+          const instagramVideo = (form.instagram_video || '').trim();
+          if (instagramVideo && !isInstagramVideoUrl(instagramVideo)) {
+            alert('Use um link valido de post, reel ou video do Instagram.');
+            return;
+          }
+          onSave({ ...form, image: imgs[0] || '', images: JSON.stringify(imgs), instagram_video: instagramVideo });
         }} disabled={!form.name} style={{ padding: '0.6rem 1.5rem' }}>Salvar</button>
       </div>
     </div>
@@ -568,6 +585,172 @@ const inputStyle = {
   width: '100%', padding: '0.7rem', borderRadius: '8px',
   border: '1px solid #2A2D33', background: '#15181C',
   color: '#F5F5F0', fontSize: '0.9rem', boxSizing: 'border-box',
+};
+
+function isInstagramVideoUrl(value) {
+  try {
+    const url = new URL(value);
+    return url.hostname.includes('instagram.com') && /^\/(p|reel|tv)\//.test(url.pathname);
+  } catch {
+    return false;
+  }
+}
+
+function InstagramAdminView({ mobile, headers }) {
+  const [links, setLinks] = useState([]);
+  const [newLink, setNewLink] = useState('');
+  const [message, setMessage] = useState('');
+  const [error, setError] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    fetch('/api/settings?key=instagram_videos')
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (!data?.value) return;
+        const parsed = JSON.parse(data.value);
+        if (Array.isArray(parsed)) setLinks(parsed);
+      })
+      .catch(() => {});
+  }, []);
+
+  const addLink = () => {
+    const value = newLink.trim();
+    setError('');
+    setMessage('');
+    if (!value) return;
+    if (!isInstagramVideoUrl(value)) {
+      setError('Use um link de post, reel ou video do Instagram.');
+      return;
+    }
+    if (links.includes(value)) {
+      setError('Esse link ja foi adicionado.');
+      return;
+    }
+    setLinks(prev => [...prev, value]);
+    setNewLink('');
+  };
+
+  const updateLink = (index, value) => {
+    setLinks(prev => prev.map((link, i) => i === index ? value : link));
+  };
+
+  const removeLink = (index) => {
+    setLinks(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const moveLink = (index, direction) => {
+    const target = index + direction;
+    if (target < 0 || target >= links.length) return;
+    setLinks(prev => {
+      const copy = [...prev];
+      const [item] = copy.splice(index, 1);
+      copy.splice(target, 0, item);
+      return copy;
+    });
+  };
+
+  const saveLinks = async () => {
+    setSaving(true);
+    setError('');
+    setMessage('');
+    const cleaned = links.map(link => link.trim()).filter(Boolean);
+    const invalid = cleaned.find(link => !isInstagramVideoUrl(link));
+    if (invalid) {
+      setSaving(false);
+      setError('Revise os links: todos precisam ser posts, reels ou videos do Instagram.');
+      return;
+    }
+    try {
+      const r = await fetch('/api/settings', {
+        method: 'POST',
+        headers: { ...headers, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ instagram_videos: JSON.stringify(cleaned) })
+      });
+      if (!r.ok) {
+        const body = await r.json().catch(() => ({ error: 'Erro ao salvar' }));
+        throw new Error(body.error || 'Erro ao salvar');
+      }
+      setLinks(cleaned);
+      setMessage('Links do Instagram salvos!');
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div style={{ width: '100%', boxSizing: 'border-box' }}>
+      <h3 style={{ color: 'var(--color-gold)', marginBottom: '1.5rem', fontSize: mobile ? '1rem' : '1.2rem' }}>
+        Videos do Instagram
+      </h3>
+
+      <div className="glass" style={{ padding: mobile ? '1rem' : '1.5rem', borderRadius: '8px', background: '#15181C', border: '1px solid #2A2D33' }}>
+        <div style={{ display: 'flex', gap: '0.75rem', flexDirection: mobile ? 'column' : 'row', marginBottom: '1rem' }}>
+          <input
+            type="url"
+            placeholder="Cole o link do Reel ou post do Instagram"
+            value={newLink}
+            onChange={e => setNewLink(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && addLink()}
+            style={{ ...inputStyle, flex: 1 }}
+          />
+          <button className="btn-premium" onClick={addLink} style={{ padding: '0.65rem 1.25rem', fontSize: '0.85rem' }}>
+            Adicionar
+          </button>
+        </div>
+
+        <a href="https://www.instagram.com/a.c.m.store/" target="_blank" rel="noopener noreferrer" style={{ color: '#D6B56D', fontSize: '0.85rem', display: 'inline-block', marginBottom: '1rem' }}>
+          Abrir perfil @a.c.m.store
+        </a>
+
+        {error && <div style={{ background: '#e74c3c', color: 'white', padding: '0.7rem', borderRadius: '8px', marginBottom: '1rem', fontSize: '0.85rem' }}>{error}</div>}
+        {message && <div style={{ background: '#27ae60', color: 'white', padding: '0.7rem', borderRadius: '8px', marginBottom: '1rem', fontSize: '0.85rem' }}>{message}</div>}
+
+        {links.length === 0 ? (
+          <div style={{ color: '#A7A7A0', textAlign: 'center', padding: '1.5rem', border: '1px dashed #2A2D33', borderRadius: '8px' }}>
+            Nenhum video adicionado ainda.
+          </div>
+        ) : (
+          <div style={{ display: 'grid', gap: '0.75rem' }}>
+            {links.map((link, index) => (
+              <div key={`${link}-${index}`} style={{ display: 'grid', gridTemplateColumns: mobile ? '1fr' : '40px minmax(0, 1fr) auto', gap: '0.5rem', alignItems: 'center', background: '#111315', border: '1px solid #2A2D33', borderRadius: '8px', padding: '0.75rem' }}>
+                <span style={{ color: '#D6B56D', fontWeight: 700, fontSize: '0.85rem' }}>{index + 1}</span>
+                <input
+                  type="url"
+                  value={link}
+                  onChange={e => updateLink(index, e.target.value)}
+                  style={inputStyle}
+                />
+                <div style={{ display: 'flex', gap: '0.4rem', justifyContent: mobile ? 'flex-end' : 'initial' }}>
+                  <button onClick={() => moveLink(index, -1)} disabled={index === 0} style={smallAdminButton}>Subir</button>
+                  <button onClick={() => moveLink(index, 1)} disabled={index === links.length - 1} style={smallAdminButton}>Descer</button>
+                  <button onClick={() => removeLink(index)} style={{ ...smallAdminButton, borderColor: '#e74c3c', color: '#e74c3c' }}>Excluir</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1.5rem' }}>
+          <button className="btn-premium" onClick={saveLinks} disabled={saving} style={{ padding: '0.7rem 1.5rem', fontSize: '0.9rem' }}>
+            {saving ? 'Salvando...' : 'Salvar Instagram'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const smallAdminButton = {
+  background: 'transparent',
+  border: '1px solid #2A2D33',
+  color: '#D6B56D',
+  padding: '0.45rem 0.65rem',
+  borderRadius: '8px',
+  cursor: 'pointer',
+  fontSize: '0.8rem',
 };
 
 function ReportView({ mobile }) {

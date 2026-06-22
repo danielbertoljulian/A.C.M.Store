@@ -55,7 +55,7 @@ httpServer.on('request', async (req, res) => {
 
         const fakeReq = {
           method: req.method,
-          url: req.url,
+          url: url.href,
           headers,
           text: async () => body,
           json: async () => JSON.parse(body),

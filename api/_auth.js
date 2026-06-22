@@ -1,4 +1,7 @@
 import { neon } from '@neondatabase/serverless';
+import { config } from 'dotenv';
+
+config({ path: '.env.local', quiet: true });
 
 export async function isAdmin(req) {
   const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
