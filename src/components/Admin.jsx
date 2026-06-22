@@ -266,7 +266,7 @@ function Admin() {
         </div>
 
         {tab === 'relatorios' ? (
-          <ReportView headers={headers} mobile={mobile} />
+          <ReportView mobile={mobile} />
         ) : tab === 'arte' ? (
           <ArtGenerator mobile={mobile} products={products} />
         ) : tab === 'orcamento' ? (
@@ -556,7 +556,9 @@ const inputStyle = {
   color: '#F5F5F0', fontSize: '0.9rem', boxSizing: 'border-box',
 };
 
-function ReportView({ headers, mobile }) {
+function ReportView({ mobile }) {
+  const getAuthHeaders = () => ({ 'x-session-token': localStorage.getItem(PWD_KEY), 'x-admin-password': localStorage.getItem(PWD_RAW_KEY) || '' });
+
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().slice(0, 10));
   const [report, setReport] = useState(null);
   const [reportLoading, setReportLoading] = useState(false);
@@ -567,7 +569,7 @@ function ReportView({ headers, mobile }) {
 
   const fetchDayData = useCallback(async (date) => {
     try {
-      const r = await fetch(`/api/report?date=${date}`, { headers });
+      const r = await fetch(`/api/report?date=${date}`, { headers: getAuthHeaders() });
       if (r.ok) return r.json();
     } catch {}
     return null;
@@ -576,7 +578,7 @@ function ReportView({ headers, mobile }) {
   const fetchArchived = useCallback(async () => {
     setArchLoading(true);
     try {
-      const r = await fetch('/api/report?all=true', { headers });
+      const r = await fetch('/api/report?all=true', { headers: getAuthHeaders() });
       if (r.ok) setArchived(await r.json());
     } catch {}
     finally { setArchLoading(false); }
@@ -585,7 +587,7 @@ function ReportView({ headers, mobile }) {
   const handleArchive = async () => {
     if (!window.confirm('Arquivar relatorio de hoje e resetar dados?')) return;
     try {
-      const r = await fetch('/api/report', { method: 'POST', headers });
+      const r = await fetch('/api/report', { method: 'POST', headers: getAuthHeaders() });
       if (r.ok) {
         setActionMsg('Relatorio arquivado e dados resetados!');
         setReport(null);
@@ -598,7 +600,7 @@ function ReportView({ headers, mobile }) {
   const handleResetDay = async (date) => {
     if (!window.confirm(`Resetar dados de ${date}?`)) return;
     try {
-      const r = await fetch(`/api/report?date=${date}`, { method: 'DELETE', headers });
+      const r = await fetch(`/api/report?date=${date}`, { method: 'DELETE', headers: getAuthHeaders() });
       if (r.ok) {
         setActionMsg(`Relatorio de ${date} excluido!`);
         fetchArchived();
@@ -623,7 +625,7 @@ function ReportView({ headers, mobile }) {
     const fetchData = async () => {
       setReportLoading(true);
       try {
-        const r = await fetch(`/api/report?date=${selectedDate}`, { headers });
+        const r = await fetch(`/api/report?date=${selectedDate}`, { headers: getAuthHeaders() });
         if (r.ok) { setReport(await r.json()); } else { setReport(null); }
       } catch { setReport(null); }
       finally { setReportLoading(false); }
