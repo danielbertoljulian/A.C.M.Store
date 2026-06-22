@@ -258,7 +258,7 @@ function BudgetGenerator({ mobile, products }) {
             <p style={{ color: '#A7A7A0', fontSize: '12px', margin: '0 0 6px', letterSpacing: '1px' }}>Qualidade e estilo para quem aprecia o melhor.</p>
             <div style={{ color: '#A7A7A0', fontSize: '12px', lineHeight: 1.5 }}>
               <span style={{ display: 'block' }}>Av Getulio Vargas 1157 Sala 1509</span>
-              <span style={{ display: 'block', color: '#D6B56D' }}>(51) 99731-9858</span>
+              <span style={{ display: 'block', color: '#D6B56D' }}>(51) 98545-8900</span>
             </div>
           </div>
         </div>

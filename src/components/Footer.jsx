@@ -42,8 +42,7 @@ const Footer = () => {
             <h4 style={{ marginBottom: '1.5rem',             color: '#D6B56D' }}>Contato</h4>
             <ul style={{ listStyle: 'none', display: 'grid', gap: '0.8rem', fontSize: '0.9rem', color: 'var(--color-text-muted)' }}>
               <li>Av Getulio Vargas 1157 Sala 1509</li>
-              <li>(51) 99731-9858</li>
-              <li>contato@acmstore.com.br</li>
+              <li>(51) 98545-8900</li>
             </ul>
           </div>
         </div>

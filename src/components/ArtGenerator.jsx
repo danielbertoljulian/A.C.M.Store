@@ -181,7 +181,7 @@ function ArtGenerator({ mobile, products }) {
                 color: '#A7A7A0', fontSize: '13px', lineHeight: 1.6
               }}>
                 <span style={{ display: 'block' }}>Av Getulio Vargas 1157 Sala 1509</span>
-                <span style={{ display: 'block', color: '#D6B56D' }}>(51) 99731-9858</span>
+                <span style={{ display: 'block', color: '#D6B56D' }}>(51) 98545-8900</span>
               </div>
             </div>
           </div>
