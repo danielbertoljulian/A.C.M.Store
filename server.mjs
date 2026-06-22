@@ -57,6 +57,7 @@ httpServer.on('request', async (req, res) => {
           method: req.method,
           url: req.url,
           headers,
+          text: async () => body,
           json: async () => JSON.parse(body),
         };
 

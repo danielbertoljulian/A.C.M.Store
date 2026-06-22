@@ -54,8 +54,10 @@ export async function POST(req) {
     let body = {};
     try {
       const text = await req.text();
-      if (text) body = JSON.parse(text);
-    } catch {}
+      if (text && text.trim()) body = JSON.parse(text);
+    } catch {
+      try { body = await req.json(); } catch {}
+    }
 
     const type = (url.searchParams.get('type') || body.type || 'visit').toLowerCase();
 
