@@ -159,7 +159,7 @@ function Admin() {
   const fetchProducts = useCallback(async () => {
     setLoading(true);
     try {
-      const r = await fetch(API);
+      const r = await fetch(`${API}?_=${Date.now()}`, { cache: 'no-store' });
       if (!r.ok) throw new Error('Failed to load');
       const data = await r.json();
       setProducts(Array.isArray(data) ? data : []);
