@@ -3,9 +3,10 @@ import ArtGenerator from './ArtGenerator';
 import BudgetGenerator from './BudgetGenerator';
 
 const API = '/api/products';
+const CATEGORIES_API = '/api/categories';
 const PWD_KEY = 'acm_admin_pwd';
 const PWD_RAW_KEY = 'acm_admin_raw';
-const categoryOptions = ['camisetas', 'polos', 'calcas', 'acessorios', 'tenis', 'esportivo'];
+const defaultCategories = ['camisetas', 'polos', 'calcas', 'acessorios', 'tenis', 'esportivo'];
 
 const selectStyle = {
   background: '#15181C', border: '1px solid #2A2D33',
@@ -29,14 +30,92 @@ function Admin() {
   const [success, setSuccess] = useState('');
   const [seeding, setSeeding] = useState(false);
   const [filterCat, setFilterCat] = useState('');
+  const [filterBrand, setFilterBrand] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [dragIdx, setDragIdx] = useState(null);
+  const [categories, setCategories] = useState([]);
+  const [showCategoryManager, setShowCategoryManager] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [categoryError, setCategoryError] = useState('');
   const [dragOverIdx, setDragOverIdx] = useState(null);
   const [tab, setTab] = useState('produtos');
   const [sharedId, setSharedId] = useState(null);
   const [bgHue, setBgHue] = useState(() => parseInt(localStorage.getItem('acm_admin_hue') || '43'));
   const [bgSat, setBgSat] = useState(() => parseInt(localStorage.getItem('acm_admin_sat') || '55'));
   const [bgLight, setBgLight] = useState(() => parseInt(localStorage.getItem('acm_admin_light') || '8'));
+
+  const brandList = [...new Set(products.map(p => p.brand).filter(Boolean))].sort();
+  const categoryList = categories.length > 0 ? categories.map(c => c.name) : defaultCategories;
+
+  const fetchCategories = useCallback(async () => {
+    try {
+      const r = await fetch(CATEGORIES_API);
+      if (r.ok) {
+        const data = await r.json();
+        if (Array.isArray(data) && data.length > 0) {
+          setCategories(data);
+        }
+      }
+    } catch {}
+  }, []);
+
+  useEffect(() => { if (loggedIn) fetchCategories(); }, [loggedIn, fetchCategories]);
+
+  const handleAddCategory = async () => {
+    const name = newCategoryName.trim().toLowerCase();
+    if (!name) { setCategoryError('Digite um nome'); return; }
+    if (categoryList.includes(name)) { setCategoryError('Categoria ja existe'); return; }
+    try {
+      const r = await fetch(CATEGORIES_API, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ name })
+      });
+      if (r.ok) {
+        setNewCategoryName('');
+        setCategoryError('');
+        fetchCategories();
+      } else {
+        const data = await r.json();
+        setCategoryError(data.error || 'Erro ao adicionar');
+      }
+    } catch (e) { setCategoryError('Erro ao adicionar: ' + e.message); }
+  };
+
+  const handleDeleteCategory = async (cat) => {
+    if (!window.confirm(`Excluir categoria "${cat}"?`)) return;
+    if (categories.length === 0) return;
+    const catObj = categories.find(c => c.name === cat);
+    if (!catObj) return;
+    try {
+      const r = await fetch(`${CATEGORIES_API}?id=${catObj.id}`, { method: 'DELETE', headers });
+      if (r.ok) fetchCategories();
+    } catch (e) { alert('Erro: ' + e.message); }
+  };
+
+  const handleUpdateCategoryImage = async (catObj, imageUrl) => {
+    try {
+      const r = await fetch(CATEGORIES_API, {
+        method: 'PUT',
+        headers,
+        body: JSON.stringify({ id: catObj.id, image: imageUrl, description: catObj.description || '' })
+      });
+      if (r.ok) fetchCategories();
+    } catch (e) { alert('Erro ao atualizar imagem: ' + e.message); }
+  };
+
+  const handleUploadCategoryImage = async (catObj, file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const dataUrl = reader.result;
+        handleUpdateCategoryImage(catObj, dataUrl);
+        resolve(dataUrl);
+      };
+      reader.onerror = () => reject(new Error('Falha ao ler imagem'));
+      reader.readAsDataURL(file);
+    });
+  };
 
   const handleDragStart = (idx) => { setDragIdx(idx); setDragOverIdx(null); };
   const handleDragOver = (e) => { e.preventDefault(); };
@@ -142,6 +221,7 @@ function Admin() {
 
   const filtered = products.filter(p => {
     if (filterCat && !(p.categories || '').includes(filterCat)) return false;
+    if (filterBrand && p.brand !== filterBrand) return false;
     if (searchTerm && !p.name.toLowerCase().includes(searchTerm.toLowerCase())) return false;
     return true;
   });
@@ -196,10 +276,21 @@ function Admin() {
         ) : (
           <>
             <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem', flexWrap: 'wrap', alignItems: 'flex-end' }}>
-              <select value={filterCat} onChange={e => setFilterCat(e.target.value)} style={selectStyle}>
-                <option value="" style={{ color: 'white', background: '#15181C' }}>Todas as Categorias</option>
-                {categoryOptions.map(c => (
-                  <option key={c} value={c} style={{ color: 'white', background: '#15181C' }}>{c === 'camisetas' ? 'Camisetas' : c === 'polos' ? 'Polos' : c === 'calcas' ? 'Calcas' : c === 'acessorios' ? 'Acessorios' : c === 'tenis' ? 'Tenis' : 'Esportivo'}</option>
+              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                <select value={filterCat} onChange={e => setFilterCat(e.target.value)} style={selectStyle}>
+                  <option value="" style={{ color: 'white', background: '#15181C' }}>Todas as Categorias</option>
+                  {categoryList.map(c => (
+                    <option key={c} value={c} style={{ color: 'white', background: '#15181C' }}>{c.charAt(0).toUpperCase() + c.slice(1)}</option>
+                  ))}
+                </select>
+                <button onClick={() => setShowCategoryManager(!showCategoryManager)} style={{ background: showCategoryManager ? '#D6B56D' : 'transparent', border: '1px solid #D6B56D', color: showCategoryManager ? '#070707' : '#D6B56D', padding: '0.5rem 0.7rem', borderRadius: '8px', cursor: 'pointer', fontSize: '0.75rem', whiteSpace: 'nowrap', fontWeight: 600 }}>
+                  GERENCIAR CATEGORIAS
+                </button>
+              </div>
+              <select value={filterBrand} onChange={e => setFilterBrand(e.target.value)} style={selectStyle}>
+                <option value="" style={{ color: 'white', background: '#15181C' }}>Todas as Marcas</option>
+                {brandList.map(b => (
+                  <option key={b} value={b} style={{ color: 'white', background: '#15181C' }}>{b}</option>
                 ))}
               </select>
               <input type="text" placeholder="Buscar por nome..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} style={{
@@ -209,11 +300,58 @@ function Admin() {
               <button className="btn-premium" onClick={() => setEditing({})} style={{ fontSize: '0.85rem', padding: '0.5rem 1rem', whiteSpace: 'nowrap' }}>+ Novo Produto</button>
             </div>
 
+            {showCategoryManager && (
+              <div className="glass" style={{ padding: '1rem', borderRadius: '12px', marginBottom: '1.5rem', background: '#15181C', border: '1px solid #2A2D33' }}>
+                <h3 style={{ color: 'var(--color-gold)', marginBottom: '0.75rem', fontSize: '0.95rem' }}>Gerenciar Categorias</h3>
+                <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
+                  <input type="text" placeholder="Nova categoria..." value={newCategoryName} onChange={e => { setNewCategoryName(e.target.value); setCategoryError(''); }} onKeyDown={e => e.key === 'Enter' && handleAddCategory()} style={{ ...inputStyle, flex: 1, minWidth: 0 }} />
+                  <button className="btn-premium" onClick={handleAddCategory} style={{ padding: '0.5rem 1rem', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>Adicionar</button>
+                </div>
+                {categoryError && <p style={{ color: '#e74c3c', fontSize: '0.8rem', marginBottom: '0.5rem' }}>{categoryError}</p>}
+                <div style={{ display: 'grid', gridTemplateColumns: mobile ? '1fr' : 'repeat(auto-fill, minmax(200px, 1fr))', gap: '0.75rem' }}>
+                  {categories.map(cat => {
+                    const catData = categories.find(c => c.id === cat.id) || cat;
+                    return (
+                      <div key={cat.id} style={{ background: '#1a1d21', padding: '0.75rem', borderRadius: '8px', border: '1px solid #2A2D33' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                          <span style={{ color: '#F5F5F0', fontSize: '0.85rem', fontWeight: 600 }}>{cat.name}</span>
+                          <button onClick={() => handleDeleteCategory(cat.name)} style={{ background: 'transparent', border: 'none', color: '#e74c3c', cursor: 'pointer', fontSize: '0.85rem', padding: '0 0.3rem' }} title="Excluir">×</button>
+                        </div>
+                        <div style={{ position: 'relative', width: '100%', height: '120px', background: '#111315', borderRadius: '6px', overflow: 'hidden', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          {cat.image ? (
+                            <img src={cat.image} alt={cat.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          ) : (
+                            <span style={{ color: '#666', fontSize: '0.75rem' }}>Sem foto</span>
+                          )}
+                          <label style={{ position: 'absolute', bottom: '4px', right: '4px', background: 'rgba(0,0,0,0.7)', color: '#D6B56D', padding: '0.2rem 0.5rem', borderRadius: '4px', cursor: 'pointer', fontSize: '0.65rem', border: '1px solid #D6B56D' }}>
+                            Foto
+                            <input type="file" accept="image/*" style={{ display: 'none' }} onChange={async (e) => {
+                              const file = e.target.files[0];
+                              if (file) await handleUploadCategoryImage(catData, file);
+                            }} />
+                          </label>
+                          {cat.image && (
+                            <button onClick={() => handleUpdateCategoryImage(catData, '')} style={{ position: 'absolute', top: '4px', right: '4px', background: 'rgba(0,0,0,0.7)', color: '#e74c3c', padding: '0.15rem 0.4rem', borderRadius: '4px', cursor: 'pointer', fontSize: '0.6rem', border: '1px solid #e74c3c' }}>
+                              Remover
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.75rem' }}>
+                  <p style={{ color: 'var(--color-text-muted)', fontSize: '0.7rem', margin: 0 }}>Clique em "Foto" para definir a imagem de capa de cada categoria.</p>
+                  <button className="btn-premium" onClick={() => { fetchCategories(); setSuccess('Categorias salvas!'); }} style={{ padding: '0.5rem 1.5rem', fontSize: '0.85rem' }}>Salvar</button>
+                </div>
+              </div>
+            )}
+
             {success && <div style={{ background: '#27ae60', color: 'white', padding: '0.8rem', borderRadius: '8px', marginBottom: '1rem' }}>{success} <button onClick={() => setSuccess('')} style={{ float: 'right', background: 'none', border: 'none', color: 'white', cursor: 'pointer' }}>✕</button></div>}
             {error && <div style={{ background: '#e74c3c', color: 'white', padding: '0.8rem', borderRadius: '8px', marginBottom: '1rem' }}>{error} <button onClick={() => setError('')} style={{ float: 'right', background: 'none', border: 'none', color: 'white', cursor: 'pointer' }}>✕</button></div>}
 
             {editing && (
-              <ProductForm product={editing} onSave={handleSave} onUpload={handleUploadImage} onCancel={() => setEditing(null)} mobile={mobile} />
+              <ProductForm product={editing} onSave={handleSave} onUpload={handleUploadImage} onCancel={() => setEditing(null)} mobile={mobile} categories={categoryList} />
             )}
 
             {loading ? (
@@ -306,15 +444,16 @@ function getImageList(p) {
   return p.image ? [p.image] : [];
 }
 
-const categoryCheckboxes = ['camisetas', 'polos', 'calcas', 'acessorios', 'tenis', 'esportivo'];
+const categoryCheckboxes = defaultCategories;
 
-function ProductForm({ product, onSave, onUpload, onCancel, mobile }) {
+function ProductForm({ product, onSave, onUpload, onCancel, mobile, categories }) {
   const [form, setForm] = useState(product);
   const [uploading, setUploading] = useState(false);
   const formRef = useRef(null);
   useEffect(() => { formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, []);
 
   const imageList = getImageList(form);
+  const categoryOpts = categories && categories.length > 0 ? categories : categoryCheckboxes;
 
   const handleFilesUpload = async (e) => {
     const files = Array.from(e.target.files);
@@ -355,7 +494,7 @@ function ProductForm({ product, onSave, onUpload, onCancel, mobile }) {
         <div>
           <label style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem', display: 'block', marginBottom: '0.3rem' }}>Categorias</label>
           <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-            {categoryCheckboxes.map(cat => {
+            {categoryOpts.map(cat => {
               const selected = (form.categories || '').split(',').map(s => s.trim()).includes(cat);
               return (
                 <label key={cat} style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', color: 'white', fontSize: '0.85rem', cursor: 'pointer' }}>
@@ -364,7 +503,7 @@ function ProductForm({ product, onSave, onUpload, onCancel, mobile }) {
                     const next = selected ? current.filter(c => c !== cat) : [...current, cat];
                     setForm(f => ({ ...f, categories: next.join(', ') }));
                   }} />
-                  {cat === 'camisetas' ? 'Camisetas' : cat === 'polos' ? 'Polos' : cat === 'calcas' ? 'Calcas' : cat === 'acessorios' ? 'Acessorios' : cat === 'tenis' ? 'Tenis' : 'Esportivo'}
+                  {cat.charAt(0).toUpperCase() + cat.slice(1)}
                 </label>
               );
             })}

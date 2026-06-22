@@ -33,6 +33,7 @@ const Products = ({ onSelectProduct, filterCategory, addToCart }) => {
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [copiedId, setCopiedId] = useState(null);
+  const [categoryList, setCategoryList] = useState([]);
   const fetched = useRef(false);
   const cardRefs = useRef({});
   const brandList = [...new Set(products.map(p => p.brand))];
@@ -77,6 +78,10 @@ const Products = ({ onSelectProduct, filterCategory, addToCart }) => {
       .then(r => r.ok ? r.json() : null)
       .then(data => { if (data && data.length) setProducts(data); })
       .catch(err => console.error('Erro ao carregar produtos:', err));
+    fetch('/api/categories')
+      .then(r => r.ok ? r.json() : null)
+      .then(data => { if (Array.isArray(data) && data.length) setCategoryList(data.map(c => ({ name: c.name, slug: c.slug }))); })
+      .catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -106,10 +111,13 @@ const Products = ({ onSelectProduct, filterCategory, addToCart }) => {
         <h2 className="section-title"><span>Nossa Colecao</span>Produtos</h2>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', marginBottom: '2rem', alignItems: 'center', justifyContent: 'center' }}>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-            {Object.entries({ all: 'Todos', camisetas: 'Camisetas', polos: 'Polos', calcas: 'Calcas', acessorios: 'Acessorios', tenis: 'Tenis', esportivo: 'Esportivo' }).map(([key, label]) => (
-              <button key={key} onClick={() => handleCategoryChange(key)}
-                className={category === key ? 'btn-premium' : ''}
-                style={category !== key ? { background: 'transparent', border: '1px solid var(--glass-border)', color: 'var(--color-text-muted)', padding: '0.5rem 1.2rem', borderRadius: '8px', cursor: 'pointer', fontSize: '0.85rem', transition: 'var(--transition-smooth)' } : { padding: '0.5rem 1.2rem', fontSize: '0.85rem' }}
+            {[
+              { name: 'all', label: 'Todos' },
+              ...categoryList.map(c => ({ name: c.name, label: c.name.charAt(0).toUpperCase() + c.name.slice(1) }))
+            ].map(({ name, label }) => (
+              <button key={name} onClick={() => handleCategoryChange(name)}
+                className={category === name ? 'btn-premium' : ''}
+                style={category !== name ? { background: 'transparent', border: '1px solid var(--glass-border)', color: 'var(--color-text-muted)', padding: '0.5rem 1.2rem', borderRadius: '8px', cursor: 'pointer', fontSize: '0.85rem', transition: 'var(--transition-smooth)' } : { padding: '0.5rem 1.2rem', fontSize: '0.85rem' }}
               >{label}</button>
             ))}
           </div>
