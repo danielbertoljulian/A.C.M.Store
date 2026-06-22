@@ -8,6 +8,8 @@ function BudgetGenerator({ mobile, products }) {
   const [selected, setSelected] = useState([]);
   const [quantities, setQuantities] = useState({});
   const [priceOverrides, setPriceOverrides] = useState({});
+  const [freight, setFreight] = useState('');
+  const [freeFreight, setFreeFreight] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [budgetCounter, setBudgetCounter] = useState(0);
   const [budgetLoaded, setBudgetLoaded] = useState(false);
@@ -57,7 +59,8 @@ function BudgetGenerator({ mobile, products }) {
     return { ...p, unitPrice, qty, total: unitPrice * qty };
   });
 
-  const grandTotal = selectedProducts.reduce((sum, p) => sum + p.total, 0);
+  const freightValue = freeFreight ? 0 : (parseCurrency(freight) || 0);
+  const grandTotal = selectedProducts.reduce((sum, p) => sum + p.total, 0) + freightValue;
 
   const formatCurrency = (val) => val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
@@ -110,6 +113,20 @@ function BudgetGenerator({ mobile, products }) {
             <label style={{ color: '#A7A7A0', fontSize: '0.75rem', display: 'block', marginBottom: '0.25rem' }}>E-mail</label>
             <input type="email" placeholder="cliente@email.com" value={clientEmail} onChange={e => setClientEmail(e.target.value)} style={inputStyle} />
           </div>
+        </div>
+      </div>
+
+      <div className="glass" style={{ padding: '1rem', borderRadius: '8px', marginBottom: '1.5rem', background: '#15181C', border: '1px solid #2A2D33' }}>
+        <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
+          <div style={{ flex: 1, minWidth: '120px' }}>
+            <label style={{ color: '#A7A7A0', fontSize: '0.75rem', display: 'block', marginBottom: '0.25rem' }}>Frete (R$)</label>
+            <input type="text" placeholder="0,00" value={freight} onChange={e => setFreight(e.target.value)} style={inputStyle} disabled={freeFreight} />
+          </div>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#A7A7A0', fontSize: '0.85rem', cursor: 'pointer', paddingTop: '1.2rem' }}>
+            <input type="checkbox" checked={freeFreight} onChange={e => { setFreeFreight(e.target.checked); if (e.target.checked) setFreight(''); }}
+              style={{ accentColor: '#D6B56D', width: '18px', height: '18px' }} />
+            Frete Gratis
+          </label>
         </div>
       </div>
 
@@ -168,6 +185,18 @@ function BudgetGenerator({ mobile, products }) {
               <div style={{ color: '#D6B56D', fontSize: '0.85rem', fontWeight: 700 }}>{formatCurrency(p.total)}</div>
             </div>
           ))}
+          {freightValue > 0 && (
+            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.3rem 0' }}>
+              <span style={{ color: '#A7A7A0', fontSize: '0.85rem' }}>Frete:</span>
+              <span style={{ color: '#A7A7A0', fontSize: '0.85rem' }}>{formatCurrency(freightValue)}</span>
+            </div>
+          )}
+          {freeFreight && (
+            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.3rem 0' }}>
+              <span style={{ color: '#27ae60', fontSize: '0.85rem' }}>Frete:</span>
+              <span style={{ color: '#27ae60', fontSize: '0.85rem', fontWeight: 600 }}>GRATIS</span>
+            </div>
+          )}
           <div style={{ marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '2px solid #D6B56D' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
               <span style={{ color: '#D6B56D', fontSize: '1.1rem', fontWeight: 700 }}>Total:</span>
@@ -239,7 +268,19 @@ function BudgetGenerator({ mobile, products }) {
           <div style={{ width: '920px', zIndex: 1, marginTop: '20px', padding: '15px 20px',
             background: 'rgba(214,181,109,0.1)', borderRadius: '8px', border: '1px solid #2A2D33' }}>
             <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-              <div style={{ textAlign: 'right' }}>
+              <div style={{ textAlign: 'right', minWidth: '200px' }}>
+                {freightValue > 0 && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                    <span style={{ color: '#A7A7A0', fontSize: '13px' }}>FRETE&nbsp;&nbsp;</span>
+                    <span style={{ color: '#A7A7A0', fontSize: '13px' }}>{formatCurrency(freightValue)}</span>
+                  </div>
+                )}
+                {freeFreight && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                    <span style={{ color: '#27ae60', fontSize: '13px' }}>FRETE&nbsp;&nbsp;</span>
+                    <span style={{ color: '#27ae60', fontSize: '13px', fontWeight: 600 }}>GRATIS</span>
+                  </div>
+                )}
                 <div style={{ color: '#A7A7A0', fontSize: '13px', marginBottom: '2px' }}>VALOR TOTAL</div>
                 <div style={{ color: '#D6B56D', fontSize: '28px', fontWeight: 700 }}>{formatCurrency(grandTotal)}</div>
               </div>
