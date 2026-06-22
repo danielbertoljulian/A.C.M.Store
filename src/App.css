@@ -1,0 +1,22 @@
+.App {
+  min-height: 100vh;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+[data-aos="fade-up"] {
+  animation: fadeInUp 1s ease-out forwards;
+}
+
+[data-aos="fade-left"] {
+  animation: fadeInUp 1s ease-out forwards;
+}
