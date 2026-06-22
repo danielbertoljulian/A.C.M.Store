@@ -40,9 +40,10 @@ function Admin() {
   const [dragOverIdx, setDragOverIdx] = useState(null);
   const [tab, setTab] = useState('produtos');
   const [sharedId, setSharedId] = useState(null);
-  const [bgHue, setBgHue] = useState(() => parseInt(localStorage.getItem('acm_admin_hue') || '43'));
-  const [bgSat, setBgSat] = useState(() => parseInt(localStorage.getItem('acm_admin_sat') || '55'));
-  const [bgLight, setBgLight] = useState(() => parseInt(localStorage.getItem('acm_admin_light') || '8'));
+  const [bgHue, setBgHue] = useState(43);
+  const [bgSat, setBgSat] = useState(55);
+  const [bgLight, setBgLight] = useState(8);
+  const [settingsLoaded, setSettingsLoaded] = useState(false);
 
   const brandList = [...new Set(products.map(p => p.brand).filter(Boolean))].sort();
   const categoryList = categories.length > 0 ? categories.map(c => c.name) : defaultCategories;
@@ -60,6 +61,19 @@ function Admin() {
   }, []);
 
   useEffect(() => { if (loggedIn) fetchCategories(); }, [loggedIn, fetchCategories]);
+
+  useEffect(() => {
+    if (!loggedIn) return;
+    fetch('/api/settings', { headers })
+      .then(r => r.ok ? r.json() : {})
+      .then(data => {
+        if (data.bgHue !== undefined) setBgHue(parseInt(data.bgHue));
+        if (data.bgSat !== undefined) setBgSat(parseInt(data.bgSat));
+        if (data.bgLight !== undefined) setBgLight(parseInt(data.bgLight));
+        setSettingsLoaded(true);
+      })
+      .catch(() => setSettingsLoaded(true));
+  }, [loggedIn]);
 
   const handleAddCategory = async () => {
     const name = newCategoryName.trim().toLowerCase();
@@ -272,7 +286,7 @@ function Admin() {
         ) : tab === 'orcamento' ? (
           <BudgetGenerator mobile={mobile} products={products} />
         ) : tab === 'ajustes' ? (
-          <SettingsView bgHue={bgHue} setBgHue={setBgHue} bgSat={bgSat} setBgSat={setBgSat} bgLight={bgLight} setBgLight={setBgLight} mobile={mobile} />
+          <SettingsView bgHue={bgHue} setBgHue={setBgHue} bgSat={bgSat} setBgSat={setBgSat} bgLight={bgLight} setBgLight={setBgLight} mobile={mobile} headers={headers} />
         ) : (
           <>
             <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem', flexWrap: 'wrap', alignItems: 'flex-end' }}>
@@ -784,24 +798,32 @@ function ReportView({ mobile }) {
   );
 }
 
-function SettingsView({ bgHue, setBgHue, bgSat, setBgSat, bgLight, setBgLight, mobile }) {
+function SettingsView({ bgHue, setBgHue, bgSat, setBgSat, bgLight, setBgLight, mobile, headers }) {
   const [saved, setSaved] = useState(false);
 
-  const handleSave = () => {
-    localStorage.setItem('acm_admin_hue', String(bgHue));
-    localStorage.setItem('acm_admin_sat', String(bgSat));
-    localStorage.setItem('acm_admin_light', String(bgLight));
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+  const handleSave = async () => {
+    try {
+      await fetch('/api/settings', {
+        method: 'POST',
+        headers: { ...headers, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bgHue: String(bgHue), bgSat: String(bgSat), bgLight: String(bgLight) })
+      });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } catch (e) { alert('Erro ao salvar: ' + e.message); }
   };
 
-  const handleReset = () => {
+  const handleReset = async () => {
     setBgHue(43);
     setBgSat(55);
     setBgLight(8);
-    localStorage.removeItem('acm_admin_hue');
-    localStorage.removeItem('acm_admin_sat');
-    localStorage.removeItem('acm_admin_light');
+    try {
+      await fetch('/api/settings', {
+        method: 'POST',
+        headers: { ...headers, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bgHue: '43', bgSat: '55', bgLight: '8' })
+      });
+    } catch {}
   };
 
         const sliderStyle = {

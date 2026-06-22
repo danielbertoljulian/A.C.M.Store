@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import html2canvas from 'html2canvas';
 
 function BudgetGenerator({ mobile, products }) {
@@ -9,11 +9,22 @@ function BudgetGenerator({ mobile, products }) {
   const [quantities, setQuantities] = useState({});
   const [priceOverrides, setPriceOverrides] = useState({});
   const [generating, setGenerating] = useState(false);
-  const [budgetNumber] = useState(() => {
-    const num = localStorage.getItem('acm_budget_counter') || '0';
-    return String(parseInt(num) + 1).padStart(5, '0');
-  });
+  const [budgetCounter, setBudgetCounter] = useState(0);
+  const [budgetLoaded, setBudgetLoaded] = useState(false);
   const canvasRef = useRef(null);
+
+  const PWD_KEY = 'acm_admin_pwd';
+  const PWD_RAW_KEY = 'acm_admin_raw';
+  const getAuthHeaders = () => ({ 'x-session-token': localStorage.getItem(PWD_KEY) || '', 'x-admin-password': localStorage.getItem(PWD_RAW_KEY) || '' });
+
+  useEffect(() => {
+    fetch('/api/settings?key=budget_counter')
+      .then(r => r.ok ? r.json() : { value: '0' })
+      .then(data => { setBudgetCounter(parseInt(data.value || '0')); setBudgetLoaded(true); })
+      .catch(() => setBudgetLoaded(true));
+  }, []);
+
+  const budgetNumber = String(budgetCounter + 1).padStart(5, '0');
 
   const toggleProduct = (id) => {
     setSelected(prev => {
@@ -68,8 +79,13 @@ function BudgetGenerator({ mobile, products }) {
       link.download = `orcamento-${clientName.replace(/\s+/g, '-').toLowerCase()}-${budgetNumber}.png`;
       link.href = canvas.toDataURL('image/png');
       link.click();
-      const currentNum = parseInt(localStorage.getItem('acm_budget_counter') || '0');
-      localStorage.setItem('acm_budget_counter', String(currentNum + 1));
+      const newCount = budgetCounter + 1;
+      setBudgetCounter(newCount);
+      fetch('/api/settings', {
+        method: 'POST',
+        headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key: 'budget_counter', value: String(newCount) })
+      }).catch(() => {});
     } catch (e) { console.error('Erro ao gerar orcamento:', e); }
     setGenerating(false);
   };

@@ -16,14 +16,34 @@ function App() {
 
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [filterCategory, setFilterCategory] = useState(null);
-  const [cart, setCart] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('acm_cart') || '[]'); } catch { return []; }
-  });
+  const [cart, setCart] = useState([]);
+  const [cartLoaded, setCartLoaded] = useState(false);
   const [showCart, setShowCart] = useState(false);
 
+  const getSessionId = () => {
+    let sid = sessionStorage.getItem('acm_session_id');
+    if (!sid) {
+      sid = 'sess_' + Date.now() + '_' + Math.random().toString(36).slice(2, 9);
+      sessionStorage.setItem('acm_session_id', sid);
+    }
+    return sid;
+  };
+
   useEffect(() => {
-    localStorage.setItem('acm_cart', JSON.stringify(cart));
-  }, [cart]);
+    fetch('/api/cart', { headers: { 'x-session-id': getSessionId() } })
+      .then(r => r.ok ? r.json() : [])
+      .then(data => { if (Array.isArray(data)) setCart(data); setCartLoaded(true); })
+      .catch(() => setCartLoaded(true));
+  }, []);
+
+  useEffect(() => {
+    if (!cartLoaded) return;
+    fetch('/api/cart', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-session-id': getSessionId() },
+      body: JSON.stringify(cart)
+    }).catch(() => {});
+  }, [cart, cartLoaded]);
 
   useEffect(() => {
     if (isAdmin) return;
