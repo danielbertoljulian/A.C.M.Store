@@ -47,16 +47,7 @@ const Footer = () => {
           </div>
         </div>
 
-        <div style={{
-          paddingTop: '2rem',
-          borderTop: '1px solid #2A2D33',
-          textAlign: 'center',
-          fontSize: '0.8rem',
-          color: '#A7A7A0'
-        }}>
-          <p style={{ marginBottom: '0.5rem', color: '#D6B56D', letterSpacing: '0.1em', textTransform: 'uppercase' }}>®️ Somente produtos originais | 📦 Envio p/ todo Brasil | 🛒 6x sem juros</p>
-          <p>© 2026 A.C.M Store. Todos os direitos reservados.</p>
-        </div>
+
       </div>
     </footer>
   );

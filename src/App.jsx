@@ -132,6 +132,17 @@ function App() {
         <About />
         <Contact />
       </main>
+      <div style={{
+        background: '#070707',
+        padding: '2rem 0',
+        borderTop: '1px solid var(--glass-border)',
+        textAlign: 'center',
+        fontSize: '0.8rem',
+        color: '#A7A7A0'
+      }}>
+        <p style={{ marginBottom: '0.5rem', color: '#D6B56D', letterSpacing: '0.1em', textTransform: 'uppercase' }}>®️ Somente produtos originais | 📦 Envio p/ todo Brasil | 🛒 6x sem juros</p>
+        <p>© 2026 A.C.M Store. Todos os direitos reservados.</p>
+      </div>
       <Footer />
       {selectedProduct && !showCart && (
         <ProductDetail product={selectedProduct} onClose={() => setSelectedProduct(null)} addToCart={addToCart} />
