@@ -44,6 +44,12 @@ const Footer = () => {
               <li>Av Getulio Vargas 1157 Sala 1509</li>
               <li>(51) 98545-8900</li>
             </ul>
+            <a href="https://fractalsys.vercel.app/" target="_blank" rel="noopener noreferrer" style={{ marginTop: '1rem', display: 'inline-block' }}>
+              <img src="/powered_fractalsys.png" alt="Powered by FractalSys" style={{ maxWidth: '140px', height: 'auto', opacity: 0.7, transition: 'opacity 0.3s ease' }}
+                onMouseEnter={(e) => e.currentTarget.style.opacity = '1'}
+                onMouseLeave={(e) => e.currentTarget.style.opacity = '0.7'}
+              />
+            </a>
           </div>
         </div>
 
