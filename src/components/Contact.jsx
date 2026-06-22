@@ -48,20 +48,17 @@ const Contact = () => {
                 <h4 style={{ fontSize: '0.9rem' }}>WhatsApp / Telefone</h4>
                 <p style={{ fontSize: '0.8rem', color: '#A7A7A0', cursor: mobile ? 'pointer' : 'default' }}
                   onClick={() => { if (mobile) openWhatsApp('Ola! Vim pelo site A.C.M Store e gostaria de mais informacoes.'); }}>
-                  (51) 99731-9858
+                  (51) 98545-8900
                 </p>
               </div>
             </div>
 
-            <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-              <div style={{ width: '40px', height: '40px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#15181C', color: '#D6B56D', border: '1px solid #2A2D33' }}>
-                ✉
-              </div>
-              <div>
-                <h4 style={{ fontSize: '0.9rem' }}>E-mail</h4>
-                <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>contato@acmstore.com.br</p>
-              </div>
-            </div>
+            <a href="https://fractalsys.vercel.app/" target="_blank" rel="noopener noreferrer" style={{ marginTop: '0.5rem' }}>
+              <img src="/powered_fractalsys.png" alt="Powered by FractalSys" style={{ maxWidth: '180px', height: 'auto', opacity: 0.8, transition: 'opacity 0.3s ease' }}
+                onMouseEnter={(e) => e.currentTarget.style.opacity = '1'}
+                onMouseLeave={(e) => e.currentTarget.style.opacity = '0.8'}
+              />
+            </a>
           </div>
         </div>
 
