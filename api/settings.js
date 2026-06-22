@@ -27,7 +27,6 @@ function json(data, status = 200) {
 export async function GET(req) {
   const db = getDb();
   try {
-    await ensureTable(db);
     const url = new URL(req.url);
     const key = url.searchParams.get('key');
     if (key) {

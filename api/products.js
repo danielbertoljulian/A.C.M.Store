@@ -25,9 +25,11 @@ async function ensureTable(db) {
 export async function GET() {
   const db = getDb();
   try {
-    await ensureTable(db);
     const data = await db`SELECT * FROM products ORDER BY sort_order ASC, created_at ASC`;
-    return new Response(JSON.stringify(data), { status: 200 });
+    return new Response(JSON.stringify(data), {
+      status: 200,
+      headers: { 'Cache-Control': 'public, max-age=60, s-maxage=120' }
+    });
   } catch (e) {
     return new Response(JSON.stringify({ error: e.message }), { status: 500 });
   }

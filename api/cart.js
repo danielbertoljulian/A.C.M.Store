@@ -29,7 +29,6 @@ function getSessionId(req) {
 export async function GET(req) {
   const db = getDb();
   try {
-    await ensureTable(db);
     const sessionId = getSessionId(req);
     const rows = await db`SELECT items FROM carts WHERE session_id = ${sessionId}`;
     const items = rows.length > 0 ? JSON.parse(rows[0].items || '[]') : [];
