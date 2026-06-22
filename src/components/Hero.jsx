@@ -10,7 +10,7 @@ const Hero = () => {
   }, []);
 
   const openWhatsApp = () => {
-    window.open('https://wa.me/5551997319858?text=Ola! Vim pelo site A.C.M Store e gostaria de mais informacoes.', '_blank');
+    window.open('https://wa.me/5551985458900?text=Ola! Vim pelo site A.C.M Store e gostaria de mais informacoes.', '_blank');
   };
 
   return (

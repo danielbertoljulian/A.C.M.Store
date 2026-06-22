@@ -9,7 +9,7 @@ const Contact = () => {
   }, []);
 
   const openWhatsApp = (msg) => {
-    window.open(`https://wa.me/5551997319858?text=${encodeURIComponent(msg)}`, '_blank');
+    window.open(`https://wa.me/5551985458900?text=${encodeURIComponent(msg)}`, '_blank');
   };
 
   return (

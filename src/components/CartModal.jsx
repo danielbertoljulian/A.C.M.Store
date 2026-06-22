@@ -40,7 +40,7 @@ const CartModal = ({ cart, onClose, onRemove, onClear, addToCart, decrementCart 
     const msg = encodeURIComponent(
       `Ola! Vim pelo site A.C.M Store. Gostaria de solicitar orcamento para os seguintes produtos:\n\n${lines.join('\n')}\n\n📦 Envio para todo o Brasil\n🛒 Parcelamento em ate 6x sem juros`
     );
-    window.open(`https://wa.me/5551997319858?text=${msg}`, '_blank');
+    window.open(`https://wa.me/5551985458900?text=${msg}`, '_blank');
     onClear();
     onClose();
   };

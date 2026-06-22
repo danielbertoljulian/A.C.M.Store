@@ -139,7 +139,7 @@ function App() {
       {showCart && (
         <CartModal cart={cart} onClose={() => setShowCart(false)} onRemove={removeFromCart} onClear={clearCart} addToCart={addToCart} decrementCart={decrementCart} />
       )}
-      <a href={"https://wa.me/5551997319858?text=" + encodeURIComponent('Ola! Vim pelo site A.C.M Store e gostaria de mais informacoes.')} target="_blank" rel="noopener noreferrer"
+      <a href={"https://wa.me/5551985458900?text=" + encodeURIComponent('Ola! Vim pelo site A.C.M Store e gostaria de mais informacoes.')} target="_blank" rel="noopener noreferrer"
         style={{
           position: 'fixed', bottom: '30px', right: '30px', background: '#25D366',
           color: 'white', width: '60px', height: '60px', borderRadius: '50%',
