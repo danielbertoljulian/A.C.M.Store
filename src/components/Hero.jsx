@@ -9,21 +9,15 @@ const BrandLogo = ({ brand, index, mobile }) => {
     const sequence = async () => {
       await new Promise(r => setTimeout(r, 1200 + index * 300));
       await controls.start({
-        boxShadow: [
-          '0 0 0px rgba(214,181,109,0)',
-          '0 0 18px rgba(214,181,109,0.9), 0 0 36px rgba(214,181,109,0.5)',
-          '0 0 0px rgba(214,181,109,0)'
-        ],
-        borderColor: [
-          'rgba(214,181,109,0)',
-          'rgba(214,181,109,1)',
-          'rgba(214,181,109,0.3)'
+        filter: [
+          'drop-shadow(0 0 0px rgba(214,181,109,0))',
+          'drop-shadow(0 0 14px rgba(214,181,109,1)) drop-shadow(0 0 28px rgba(214,181,109,0.6))',
+          'drop-shadow(0 0 8px rgba(214,181,109,0.5))'
         ],
         transition: { duration: 0.8, ease: 'easeInOut' }
       });
       controls.set({
-        boxShadow: '0 0 12px rgba(214,181,109,0.35)',
-        borderColor: 'rgba(214,181,109,0.35)'
+        filter: 'drop-shadow(0 0 8px rgba(214,181,109,0.5))'
       });
     };
     sequence();
@@ -39,15 +33,15 @@ const BrandLogo = ({ brand, index, mobile }) => {
         src={brand.src}
         alt={brand.alt}
         animate={controls}
-        whileHover={{ scale: 1.12, boxShadow: '0 0 20px rgba(214,181,109,0.7)' }}
+        whileHover={{ scale: 1.12, filter: 'drop-shadow(0 0 16px rgba(214,181,109,0.9))' }}
         style={{
           height: mobile ? '32px' : '42px',
           width: 'auto',
           display: 'block',
-          padding: '8px 14px',
-          borderRadius: '8px',
-          border: '1px solid rgba(214,181,109,0)',
-          background: 'rgba(214,181,109,0.05)',
+          padding: 0,
+          border: 'none',
+          borderRadius: 0,
+          background: 'transparent',
           cursor: 'default'
         }}
       />
