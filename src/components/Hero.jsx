@@ -1,6 +1,59 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, useAnimation } from 'framer-motion';
 import LightRays from './LightRays';
+
+const BrandLogo = ({ brand, index, mobile }) => {
+  const controls = useAnimation();
+
+  useEffect(() => {
+    const sequence = async () => {
+      await new Promise(r => setTimeout(r, 1200 + index * 300));
+      await controls.start({
+        boxShadow: [
+          '0 0 0px rgba(214,181,109,0)',
+          '0 0 18px rgba(214,181,109,0.9), 0 0 36px rgba(214,181,109,0.5)',
+          '0 0 0px rgba(214,181,109,0)'
+        ],
+        borderColor: [
+          'rgba(214,181,109,0)',
+          'rgba(214,181,109,1)',
+          'rgba(214,181,109,0.3)'
+        ],
+        transition: { duration: 0.8, ease: 'easeInOut' }
+      });
+      controls.set({
+        boxShadow: '0 0 12px rgba(214,181,109,0.35)',
+        borderColor: 'rgba(214,181,109,0.35)'
+      });
+    };
+    sequence();
+  }, [controls, index]);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.7, y: 10 }}
+      animate={{ opacity: 1, scale: 1, y: 0 }}
+      transition={{ delay: 0.8 + index * 0.15, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+    >
+      <motion.img
+        src={brand.src}
+        alt={brand.alt}
+        animate={controls}
+        whileHover={{ scale: 1.12, boxShadow: '0 0 20px rgba(214,181,109,0.7)' }}
+        style={{
+          height: mobile ? '32px' : '42px',
+          width: 'auto',
+          display: 'block',
+          padding: '8px 14px',
+          borderRadius: '8px',
+          border: '1px solid rgba(214,181,109,0)',
+          background: 'rgba(214,181,109,0.05)',
+          cursor: 'default'
+        }}
+      />
+    </motion.div>
+  );
+};
 
 const Hero = () => {
   const [mobile, setMobile] = useState(window.innerWidth <= 768);
@@ -111,34 +164,13 @@ const Hero = () => {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: mobile ? '1.5rem' : '2.5rem',
+              gap: mobile ? '0.8rem' : '1.2rem',
               flexWrap: 'wrap',
               marginBottom: '2rem'
             }}
           >
             {brands.map((brand, index) => (
-              <motion.img
-                key={brand.alt}
-                src={brand.src}
-                alt={brand.alt}
-                initial={{ opacity: 0, y: 15 }}
-                animate={{ opacity: 0.7, y: 0 }}
-                transition={{ delay: 0.8 + index * 0.1, duration: 0.5 }}
-                whileHover={{ opacity: 1, scale: 1.1 }}
-                style={{
-                  height: mobile ? '28px' : '36px',
-                  width: 'auto',
-                  filter: 'grayscale(100%) brightness(0.7)',
-                  transition: 'filter 0.3s ease',
-                  cursor: 'default'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.filter = 'grayscale(0%) brightness(1)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.filter = 'grayscale(100%) brightness(0.7)';
-                }}
-              />
+              <BrandLogo key={brand.alt} brand={brand} index={index} mobile={mobile} />
             ))}
           </motion.div>
 
