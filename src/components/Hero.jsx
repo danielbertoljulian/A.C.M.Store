@@ -1,51 +1,41 @@
 import React, { useState, useEffect } from 'react';
-import { motion, useAnimation } from 'framer-motion';
+import { motion } from 'framer-motion';
 import LightRays from './LightRays';
 
 const BrandLogo = ({ brand, index, mobile }) => {
-  const controls = useAnimation();
+  const [pulse, setPulse] = useState(false);
 
   useEffect(() => {
-    const sequence = async () => {
-      await new Promise(r => setTimeout(r, 1200 + index * 300));
-      await controls.start({
-        filter: [
-          'drop-shadow(0 0 0px rgba(214,181,109,0))',
-          'drop-shadow(0 0 14px rgba(214,181,109,1)) drop-shadow(0 0 28px rgba(214,181,109,0.6))',
-          'drop-shadow(0 0 8px rgba(214,181,109,0.5))'
-        ],
-        transition: { duration: 0.8, ease: 'easeInOut' }
-      });
-      controls.set({
-        filter: 'drop-shadow(0 0 8px rgba(214,181,109,0.5))'
-      });
-    };
-    sequence();
-  }, [controls, index]);
+    const timer = setTimeout(() => {
+      setPulse(true);
+      setTimeout(() => setPulse(false), 800);
+    }, 1200 + index * 300);
+    return () => clearTimeout(timer);
+  }, [index]);
 
   return (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.7, y: 10 }}
-      animate={{ opacity: 1, scale: 1, y: 0 }}
+    <motion.img
+      src={brand.src}
+      alt={brand.alt}
+      initial={{ opacity: 0, scale: 0.7 }}
+      animate={{ opacity: 1, scale: 1 }}
       transition={{ delay: 0.8 + index * 0.15, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-    >
-      <motion.img
-        src={brand.src}
-        alt={brand.alt}
-        animate={controls}
-        whileHover={{ scale: 1.12, filter: 'drop-shadow(0 0 16px rgba(214,181,109,0.9))' }}
-        style={{
-          height: mobile ? '32px' : '42px',
-          width: 'auto',
-          display: 'block',
-          padding: 0,
-          border: 'none',
-          borderRadius: 0,
-          background: 'transparent',
-          cursor: 'default'
-        }}
-      />
-    </motion.div>
+      whileHover={{ scale: 1.1 }}
+      style={{
+        height: mobile ? '32px' : '42px',
+        width: 'auto',
+        display: 'block',
+        padding: 0,
+        border: 'none',
+        borderRadius: 0,
+        background: 'transparent',
+        cursor: 'default',
+        transition: 'filter 0.3s ease, transform 0.3s ease',
+        filter: pulse
+          ? 'brightness(2.5) drop-shadow(0 0 6px rgba(214,181,109,0.8))'
+          : 'brightness(1) drop-shadow(0 0 3px rgba(214,181,109,0.3))'
+      }}
+    />
   );
 };
 
