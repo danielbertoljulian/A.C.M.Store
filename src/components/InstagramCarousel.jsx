@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const INSTAGRAM_PROFILE = 'https://www.instagram.com/a.c.m.store/';
 
@@ -38,64 +39,112 @@ const InstagramCarousel = () => {
 
   if (!embeds.length) {
     return (
-      <div className="instagram-showcase">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.6 }}
+        className="instagram-showcase"
+      >
         <div>
           <span className="instagram-eyebrow">Instagram</span>
           <h3>Acompanhe nossos looks e novidades</h3>
         </div>
-        <a className="instagram-shortcut" href={INSTAGRAM_PROFILE} target="_blank" rel="noopener noreferrer">
+        <motion.a
+          className="instagram-shortcut"
+          href={INSTAGRAM_PROFILE}
+          target="_blank"
+          rel="noopener noreferrer"
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+        >
           Abrir @a.c.m.store
-        </a>
-      </div>
+        </motion.a>
+      </motion.div>
     );
   }
 
   return (
-    <div className="instagram-showcase">
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      transition={{ duration: 0.6 }}
+      className="instagram-showcase"
+    >
       <div className="instagram-header">
         <div>
           <span className="instagram-eyebrow">Instagram</span>
           <h3>Videos da A.C.M Store</h3>
         </div>
-        <a className="instagram-shortcut" href={INSTAGRAM_PROFILE} target="_blank" rel="noopener noreferrer">
+        <motion.a
+          className="instagram-shortcut"
+          href={INSTAGRAM_PROFILE}
+          target="_blank"
+          rel="noopener noreferrer"
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+        >
           Ver perfil
-        </a>
+        </motion.a>
       </div>
 
       <div className="instagram-carousel">
-        <button type="button" className="instagram-nav" onClick={() => goTo(-1)} aria-label="Video anterior">
+        <motion.button
+          type="button"
+          className="instagram-nav"
+          onClick={() => goTo(-1)}
+          aria-label="Video anterior"
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+        >
           {'<'}
-        </button>
+        </motion.button>
         <div className="instagram-frame-wrap">
-          <iframe
-            key={embeds[active]}
-            src={embeds[active]}
-            title={`Video do Instagram ${active + 1}`}
-            className="instagram-frame"
-            allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
-            sandbox="allow-scripts allow-same-origin allow-presentation"
-            allowFullScreen
-          />
+          <AnimatePresence mode="wait">
+            <motion.iframe
+              key={embeds[active]}
+              src={embeds[active]}
+              title={`Video do Instagram ${active + 1}`}
+              className="instagram-frame"
+              allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
+              sandbox="allow-scripts allow-same-origin allow-presentation"
+              allowFullScreen
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.3 }}
+            />
+          </AnimatePresence>
         </div>
-        <button type="button" className="instagram-nav" onClick={() => goTo(1)} aria-label="Proximo video">
+        <motion.button
+          type="button"
+          className="instagram-nav"
+          onClick={() => goTo(1)}
+          aria-label="Proximo video"
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+        >
           {'>'}
-        </button>
+        </motion.button>
       </div>
 
       {embeds.length > 1 && (
         <div className="instagram-dots" aria-label="Selecionar video">
           {embeds.map((_, index) => (
-            <button
+            <motion.button
               key={index}
               type="button"
               className={index === active ? 'active' : ''}
               onClick={() => setActive(index)}
               aria-label={`Abrir video ${index + 1}`}
+              whileHover={{ scale: 1.2 }}
+              whileTap={{ scale: 0.9 }}
             />
           ))}
         </div>
       )}
-    </div>
+    </motion.div>
   );
 };
 

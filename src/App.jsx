@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react'
+import { AnimatePresence, motion } from 'framer-motion'
 import Navbar from './components/Navbar'
 import Hero from './components/Hero'
 import Products from './components/Products'
@@ -133,13 +134,25 @@ function App() {
         <Contact />
       </main>
       <Footer />
-      {selectedProduct && !showCart && (
-        <ProductDetail product={selectedProduct} onClose={() => setSelectedProduct(null)} addToCart={addToCart} />
-      )}
-      {showCart && (
-        <CartModal cart={cart} onClose={() => setShowCart(false)} onRemove={removeFromCart} onClear={clearCart} addToCart={addToCart} decrementCart={decrementCart} />
-      )}
-      <a href={"https://wa.me/5551985458900?text=" + encodeURIComponent('Ola! Vim pelo site A.C.M Store e gostaria de mais informacoes.')} target="_blank" rel="noopener noreferrer"
+      <AnimatePresence>
+        {selectedProduct && !showCart && (
+          <ProductDetail product={selectedProduct} onClose={() => setSelectedProduct(null)} addToCart={addToCart} />
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {showCart && (
+          <CartModal cart={cart} onClose={() => setShowCart(false)} onRemove={removeFromCart} onClear={clearCart} addToCart={addToCart} decrementCart={decrementCart} />
+        )}
+      </AnimatePresence>
+      <motion.a
+        href={"https://wa.me/5551985458900?text=" + encodeURIComponent('Ola! Vim pelo site A.C.M Store e gostaria de mais informacoes.')}
+        target="_blank"
+        rel="noopener noreferrer"
+        whileHover={{ scale: 1.1, boxShadow: '0 10px 30px rgba(37,211,102,0.5)' }}
+        whileTap={{ scale: 0.95 }}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 1, duration: 0.5 }}
         style={{
           position: 'fixed', bottom: '30px', right: '30px', background: '#25D366',
           color: 'white', width: '60px', height: '60px', borderRadius: '50%',
@@ -147,11 +160,9 @@ function App() {
           fontSize: '24px', boxShadow: '0 10px 25px rgba(0,0,0,0.3)', zIndex: 1001,
           transition: 'var(--transition-smooth)'
         }}
-        onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.1)'}
-        onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
       >
         <span role="img" aria-label="whatsapp">💬</span>
-      </a>
+      </motion.a>
     </div>
   )
 }

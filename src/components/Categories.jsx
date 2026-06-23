@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 
 const defaultCategoryData = [
   { name: 'Camisetas', key: 'camisetas', desc: 'Conforto e Estilo Premium', img: '/Produtos_1/Produto_1.png' },
@@ -14,7 +15,7 @@ const Categories = ({ onCategoryClick }) => {
 
   useEffect(() => {
     Promise.all([
-      fetch('/api/products').then(r => r.ok ? r.json() : []),
+      fetch('/api/products?t=' + Date.now()).then(r => r.ok ? r.json() : []),
       fetch('/api/categories').then(r => r.ok ? r.json() : []).catch(() => [])
     ]).then(([products, catList]) => {
       if (!products || !products.length) { setCategories([]); return; }
@@ -67,44 +68,83 @@ const Categories = ({ onCategoryClick }) => {
 
   if (categories.length === 0) return null;
 
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1
+      }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 30 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] }
+    }
+  };
+
   return (
     <section id="categorias" className="section-padding">
       <div className="container">
-        <h2 className="section-title">
+        <motion.h2
+          className="section-title"
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: '-100px' }}
+          transition={{ duration: 0.6 }}
+        >
           <span></span>
           Categorias
-        </h2>
+        </motion.h2>
 
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
-          gap: '2rem'
-        }}>
+        <motion.div
+          variants={containerVariants}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: '-50px' }}
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+            gap: '2rem'
+          }}
+        >
           {categories.map(cat => (
-            <div key={cat.id} className="glass" style={{
-              borderRadius: '12px',
-              overflow: 'hidden',
-              cursor: 'pointer',
-              transition: 'var(--transition-smooth)',
-              border: '1px solid transparent'
-            }} onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'translateY(-10px)';
-              e.currentTarget.style.borderColor = 'var(--color-gold)';
-              e.currentTarget.style.boxShadow = '0 0 24px rgba(214,181,109,0.2)';
-            }} onMouseLeave={(e) => {
-              e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.borderColor = 'transparent';
-              e.currentTarget.style.boxShadow = 'none';
-            }} onClick={() => handleClick(cat.key)}>
+            <motion.div
+              key={cat.id}
+              className="glass"
+              variants={itemVariants}
+              whileHover={{
+                y: -10,
+                boxShadow: '0 0 24px rgba(214,181,109,0.2)',
+                borderColor: 'var(--color-gold)'
+              }}
+              onClick={() => handleClick(cat.key)}
+              style={{
+                borderRadius: '12px',
+                overflow: 'hidden',
+                cursor: 'pointer',
+                transition: 'var(--transition-smooth)',
+                border: '1px solid transparent'
+              }}
+            >
               <div style={{ height: '280px', overflow: 'hidden', background: '#111315' }}>
                 {cat.img ? (
-                  <img src={cat.img} alt={cat.name} style={{
-                    width: '100%',
-                    height: '100%',
-                    objectFit: 'cover',
-                    opacity: 0.9,
-                    transition: 'transform 0.3s ease'
-                  }} />
+                  <motion.img
+                    src={cat.img}
+                    alt={cat.name}
+                    whileHover={{ scale: 1.1 }}
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'cover',
+                      opacity: 0.9,
+                      transition: 'transform 0.3s ease'
+                    }}
+                  />
                 ) : (
                   <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#1a1d21' }}>
                     <span style={{ color: '#666', fontSize: '0.9rem' }}>{cat.name}</span>
@@ -116,9 +156,9 @@ const Categories = ({ onCategoryClick }) => {
                 {cat.desc && <p style={{ color: '#A7A7A0', fontSize: '0.9rem', marginBottom: '0.3rem' }}>{cat.desc}</p>}
                 <small style={{ color: '#D6B56D', fontSize: '0.8rem' }}>{cat.count}</small>
               </div>
-            </div>
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
       </div>
     </section>
   );
