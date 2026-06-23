@@ -225,12 +225,27 @@ function Admin() {
   };
 
   const handleUploadImage = async (file) => {
-    return new Promise((resolve, reject) => {
+    const dataUrl = await new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = () => resolve(reader.result);
       reader.onerror = () => reject(new Error('Falha ao ler imagem'));
       reader.readAsDataURL(file);
     });
+
+    const response = await fetch('/api/upload', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-session-token': localStorage.getItem(PWD_KEY) || '',
+        'x-admin-password': localStorage.getItem(PWD_RAW_KEY) || ''
+      },
+      body: JSON.stringify({ name: file.name, type: file.type, dataUrl })
+    });
+
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || 'Falha ao enviar imagem');
+    if (!data.dataUrl) throw new Error('Upload nao retornou dados da imagem');
+    return data.dataUrl;
   };
 
   const filtered = products.filter(p => {
@@ -494,13 +509,6 @@ function ProductForm({ product, onSave, onUpload, onCancel, mobile, categories }
     setForm(f => ({ ...f, images: JSON.stringify(current) }));
   };
 
-  const handleAddUrl = () => {
-    const url = prompt('URL da imagem:');
-    if (!url) return;
-    const current = getImageList(form);
-    setForm(f => ({ ...f, images: JSON.stringify([...current, url]) }));
-  };
-
   return (
     <div ref={formRef} className="glass" style={{ padding: '1.5rem', borderRadius: '12px', marginBottom: '1.5rem', background: '#15181C', border: '1px solid #2A2D33' }}>
       <h3 style={{ color: 'var(--color-gold)', marginBottom: '1rem' }}>{product.id ? 'Editar Produto' : 'Novo Produto'}</h3>
@@ -555,7 +563,6 @@ function ProductForm({ product, onSave, onUpload, onCancel, mobile, categories }
           </div>
           <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
             <input type="file" accept="image/*" multiple onChange={handleFilesUpload} disabled={uploading} style={{ color: '#F5F5F0', fontSize: '0.85rem' }} />
-            <button onClick={handleAddUrl} style={{ background: 'transparent', border: '1px solid #2A2D33', color: '#F5F5F0', padding: '0.4rem 0.8rem', borderRadius: '8px', cursor: 'pointer', fontSize: '0.85rem' }}>+ URL</button>
             {uploading && <span style={{ color: 'var(--color-gold)', fontSize: '0.85rem' }}>Enviando...</span>}
           </div>
         </div>
