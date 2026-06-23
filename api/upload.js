@@ -1,8 +1,7 @@
 import { put } from '@vercel/blob';
 import { isAdmin } from './_auth.js';
 import { neon } from '@neondatabase/serverless';
-import { mkdir, writeFile } from 'fs/promises';
-import { extname, join } from 'path';
+import { extname } from 'path';
 
 function safeFileName(name = 'produto.png') {
   const ext = extname(name).toLowerCase() || '.png';
