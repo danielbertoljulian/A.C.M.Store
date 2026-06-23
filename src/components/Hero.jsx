@@ -99,7 +99,8 @@ const Hero = () => {
       alignItems: 'center',
       position: 'relative',
       overflow: 'hidden',
-      paddingTop: '80px'
+      paddingTop: '60px',
+      paddingBottom: '40px'
     }}>
       <LightRays
         raysOrigin="top-center"
