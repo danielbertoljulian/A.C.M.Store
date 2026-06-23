@@ -8,7 +8,7 @@ const BrandLogo = ({ brand, index, mobile }) => {
   useEffect(() => {
     const timer = setTimeout(() => {
       setPulse(true);
-      setTimeout(() => setPulse(false), 800);
+      setTimeout(() => setPulse(false), 1000);
     }, 1200 + index * 300);
     return () => clearTimeout(timer);
   }, [index]);
@@ -20,9 +20,9 @@ const BrandLogo = ({ brand, index, mobile }) => {
       initial={{ opacity: 0, scale: 0.7 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ delay: 0.8 + index * 0.15, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-      whileHover={{ scale: 1.1 }}
+      whileHover={{ scale: 1.15, filter: 'brightness(2) drop-shadow(0 0 12px rgba(214,181,109,1))' }}
       style={{
-        height: mobile ? '32px' : '42px',
+        height: mobile ? '34px' : '44px',
         width: 'auto',
         display: 'block',
         padding: 0,
@@ -30,10 +30,10 @@ const BrandLogo = ({ brand, index, mobile }) => {
         borderRadius: 0,
         background: 'transparent',
         cursor: 'default',
-        transition: 'filter 0.3s ease, transform 0.3s ease',
+        transition: 'filter 0.4s ease, transform 0.3s ease',
         filter: pulse
-          ? 'brightness(2.5) drop-shadow(0 0 6px rgba(214,181,109,0.8))'
-          : 'brightness(1) drop-shadow(0 0 3px rgba(214,181,109,0.3))'
+          ? 'brightness(3) drop-shadow(0 0 10px rgba(214,181,109,1)) drop-shadow(0 0 20px rgba(214,181,109,0.7))'
+          : 'brightness(1.1) drop-shadow(0 0 4px rgba(214,181,109,0.5))'
       }}
     />
   );
