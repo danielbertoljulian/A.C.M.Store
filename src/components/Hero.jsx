@@ -108,7 +108,7 @@ const Hero = () => {
 
           <motion.div
             variants={itemVariants}
-            style={{ marginBottom: '1.5rem' }}
+            style={{ marginBottom: '1.5rem', overflow: 'hidden', width: '100%' }}
           >
             <LogoLoop
               logos={brands}
