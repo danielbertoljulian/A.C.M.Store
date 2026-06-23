@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import LightRays from './LightRays';
+import LogoLoop from './LogoLoop';
 
 const Hero = () => {
   const [mobile, setMobile] = useState(window.innerWidth <= 768);
@@ -45,13 +46,13 @@ const Hero = () => {
   };
 
   const brands = [
-    { name: 'Lacoste', src: '/brands/LACOSTE.png' },
-    { name: 'Tommy Hilfiger', src: '/brands/TOMMY HILFIGER.png' },
-    { name: 'Mizuno', src: '/brands/MIZUNO.png' },
-    { name: 'Oakley', src: '/brands/OAKLEY.png' },
-    { name: 'Quiksilver', src: '/brands/QUIKSILVER.png' },
-    { name: 'Reserva', src: '/brands/RESERVA.png' },
-    { name: 'Ellus', src: '/brands/ELLUS.png' },
+    { src: '/brands/LACOSTE.png', alt: 'Lacoste' },
+    { src: '/brands/TOMMY HILFIGER.png', alt: 'Tommy Hilfiger' },
+    { src: '/brands/MIZUNO.png', alt: 'Mizuno' },
+    { src: '/brands/OAKLEY.png', alt: 'Oakley' },
+    { src: '/brands/QUIKSILVER.png', alt: 'Quiksilver' },
+    { src: '/brands/RESERVA.png', alt: 'Reserva' },
+    { src: '/brands/ELLUS.png', alt: 'Ellus' },
   ];
 
   return (
@@ -90,7 +91,7 @@ const Hero = () => {
           variants={containerVariants}
           initial="hidden"
           animate="visible"
-          style={{ maxWidth: '700px', margin: '0 auto' }}
+          style={{ maxWidth: '700px', margin: '0 auto', width: '100%' }}
         >
           <motion.img
             src="/LOGO_1_TRNSP.png"
@@ -98,49 +99,29 @@ const Hero = () => {
             variants={logoVariants}
             whileHover={{ scale: 1.05 }}
             style={{
-              height: mobile ? '240px' : '360px',
+              height: mobile ? '200px' : '300px',
               width: 'auto',
-              marginBottom: '2rem',
+              marginBottom: '1.5rem',
               filter: 'drop-shadow(0 4px 20px rgba(214,181,109,0.3))'
             }}
           />
 
           <motion.div
             variants={itemVariants}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: mobile ? '1.5rem' : '2.5rem',
-              flexWrap: 'wrap',
-              marginBottom: '2rem',
-              opacity: 0.7
-            }}
+            style={{ marginBottom: '1.5rem' }}
           >
-            {brands.map((brand, index) => (
-              <motion.img
-                key={brand.name}
-                src={brand.src}
-                alt={brand.name}
-                initial={{ opacity: 0, y: 15 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.8 + index * 0.1, duration: 0.5 }}
-                whileHover={{ opacity: 1, scale: 1.1, filter: 'brightness(1.2)' }}
-                style={{
-                  height: mobile ? '28px' : '36px',
-                  width: 'auto',
-                  filter: 'grayscale(100%) brightness(0.7)',
-                  transition: 'filter 0.3s ease, transform 0.3s ease',
-                  cursor: 'default'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.filter = 'grayscale(0%) brightness(1)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.filter = 'grayscale(100%) brightness(0.7)';
-                }}
-              />
-            ))}
+            <LogoLoop
+              logos={brands}
+              speed={40}
+              direction="left"
+              logoHeight={mobile ? 28 : 36}
+              gap={48}
+              pauseOnHover={true}
+              fadeOut={true}
+              fadeOutColor="#070707"
+              scaleOnHover={true}
+              ariaLabel="Marcas parceiras"
+            />
           </motion.div>
 
           <motion.p
