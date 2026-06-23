@@ -107,7 +107,37 @@ export async function POST(req) {
   try {
     const db = getDb();
     await ensureTable(db);
+    const url = new URL(req.url);
+    const action = url.searchParams.get('action');
     const body = await req.json();
+
+    if (action === 'seed') {
+      const defaultProducts = [
+        { id: '1', name: 'Camiseta Lacoste Color Block', slug: 'camiseta-lacoste-color-block', brand: 'Lacoste', categories: 'camisetas', image: '/Produtos_1/Produto_1.png', price: '399,00', off: '10' },
+        { id: '2', name: 'Polo Tommy Hilfiger Classic', slug: 'polo-tommy-hilfiger-classic', brand: 'Tommy Hilfiger', categories: 'polos', image: '/Produtos_1/Produto_2.png', price: '449,00', off: '' },
+        { id: '3', name: 'Camiseta Quiksilver Surf', slug: 'camiseta-quiksilver-surf', brand: 'Quiksilver', categories: 'camisetas,esportivo', image: '/Produtos_1/Produto_1.png', price: '299,00', off: '15' },
+        { id: '4', name: 'Tenis Mizuno Wave', slug: 'tenis-mizuno-wave', brand: 'Mizuno', categories: 'tenis,esportivo', image: '/Produtos_1/Produto_2.png', price: '599,00', off: '' }
+      ];
+      let count = 0;
+      for (let i = 0; i < defaultProducts.length; i++) {
+        const p = defaultProducts[i];
+        const existing = await db`SELECT id FROM products WHERE id = ${p.id}`;
+        if (!existing.length) {
+          await db`INSERT INTO products (id, name, slug, brand, categories, image, images, price, off, sort_order)
+            VALUES (${p.id}, ${p.name}, ${p.slug}, ${p.brand}, ${p.categories}, ${p.image}, '[]', ${p.price}, ${p.off}, ${i + 1})`;
+          count++;
+        }
+      }
+      return new Response(JSON.stringify({ imported: count, total: defaultProducts.length }), { status: 200 });
+    }
+
+    if (action === 'reorder') {
+      for (const item of (body.orders || [])) {
+        await db`UPDATE products SET sort_order = ${item.sort_order} WHERE id = ${String(item.id)}`;
+      }
+      return new Response(JSON.stringify({ success: true }), { status: 200 });
+    }
+
     const allIds = await db`SELECT id FROM products WHERE id ~ '^[0-9]+$'`;
     let maxId = 0;
     for (const row of allIds) {

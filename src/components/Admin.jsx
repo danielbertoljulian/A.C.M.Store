@@ -179,7 +179,7 @@ function Admin() {
     setDragIdx(null);
     const orders = reordered.map((p, i) => ({ id: p.id, sort_order: i + 1 }));
     try {
-      const r = await fetch('/api/reorder', { method: 'POST', headers: { 'x-session-token': localStorage.getItem(PWD_KEY), 'x-admin-password': localStorage.getItem(PWD_RAW_KEY) || '', 'Content-Type': 'application/json' }, body: JSON.stringify({ orders }) });
+      const r = await fetch('/api/products?action=reorder', { method: 'POST', headers: { 'x-session-token': localStorage.getItem(PWD_KEY), 'x-admin-password': localStorage.getItem(PWD_RAW_KEY) || '', 'Content-Type': 'application/json' }, body: JSON.stringify({ orders }) });
       if (!r.ok) throw new Error('Falha ao reordenar');
       setSuccess('Ordem atualizada!');
       fetchProducts();
@@ -468,7 +468,7 @@ function Admin() {
                 <button className="btn-premium" onClick={async () => {
                   setSeeding(true);
                   try {
-                    const r = await fetch('/api/seed', { method: 'POST', headers });
+                    const r = await fetch('/api/products?action=seed', { method: 'POST', headers });
                     const data = await r.json();
                     setSuccess(`${data.imported} produtos importados!`);
                     fetchProducts();
