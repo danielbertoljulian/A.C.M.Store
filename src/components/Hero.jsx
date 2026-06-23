@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import LightRays from './LightRays';
-import LogoLoop from './LogoLoop';
 
 const Hero = () => {
   const [mobile, setMobile] = useState(window.innerWidth <= 768);
@@ -108,20 +107,39 @@ const Hero = () => {
 
           <motion.div
             variants={itemVariants}
-            style={{ marginBottom: '1.5rem', overflow: 'hidden', width: '100%' }}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: mobile ? '1.5rem' : '2.5rem',
+              flexWrap: 'wrap',
+              marginBottom: '2rem'
+            }}
           >
-            <LogoLoop
-              logos={brands}
-              speed={40}
-              direction="left"
-              logoHeight={mobile ? 28 : 36}
-              gap={48}
-              pauseOnHover={true}
-              fadeOut={true}
-              fadeOutColor="#070707"
-              scaleOnHover={true}
-              ariaLabel="Marcas parceiras"
-            />
+            {brands.map((brand, index) => (
+              <motion.img
+                key={brand.alt}
+                src={brand.src}
+                alt={brand.alt}
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 0.7, y: 0 }}
+                transition={{ delay: 0.8 + index * 0.1, duration: 0.5 }}
+                whileHover={{ opacity: 1, scale: 1.1 }}
+                style={{
+                  height: mobile ? '28px' : '36px',
+                  width: 'auto',
+                  filter: 'grayscale(100%) brightness(0.7)',
+                  transition: 'filter 0.3s ease',
+                  cursor: 'default'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.filter = 'grayscale(0%) brightness(1)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.filter = 'grayscale(100%) brightness(0.7)';
+                }}
+              />
+            ))}
           </motion.div>
 
           <motion.p
