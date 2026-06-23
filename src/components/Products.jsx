@@ -145,8 +145,7 @@ const Products = ({ onSelectProduct, filterCategory, addToCart }) => {
         <motion.div
           variants={containerVariants}
           initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: '-50px' }}
+          animate="visible"
           style={{ display: 'grid', gridTemplateColumns: mobile ? 'repeat(2, 1fr)' : 'repeat(auto-fill, minmax(240px, 1fr))', gap: '1.5rem' }}
         >
           {paginated.map(product => (
