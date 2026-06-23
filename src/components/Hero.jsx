@@ -89,6 +89,7 @@ const Hero = () => {
     { src: '/brands/QUIKSILVER.png', alt: 'Quiksilver' },
     { src: '/brands/RESERVA.png', alt: 'Reserva' },
     { src: '/brands/ELLUS.png', alt: 'Ellus' },
+    { src: '/brands/RAY BAN.png', alt: 'Ray-Ban' },
   ];
 
   return (
