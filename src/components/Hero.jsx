@@ -44,6 +44,16 @@ const Hero = () => {
     }
   };
 
+  const brands = [
+    { name: 'Lacoste', src: '/brands/LACOSTE.png' },
+    { name: 'Tommy Hilfiger', src: '/brands/TOMMY HILFIGER.png' },
+    { name: 'Mizuno', src: '/brands/MIZUNO.png' },
+    { name: 'Oakley', src: '/brands/OAKLEY.png' },
+    { name: 'Quiksilver', src: '/brands/QUIKSILVER.png' },
+    { name: 'Reserva', src: '/brands/RESERVA.png' },
+    { name: 'Ellus', src: '/brands/ELLUS.png' },
+  ];
+
   return (
     <section id="home" style={{
       height: '100vh',
@@ -94,6 +104,44 @@ const Hero = () => {
               filter: 'drop-shadow(0 4px 20px rgba(214,181,109,0.3))'
             }}
           />
+
+          <motion.div
+            variants={itemVariants}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: mobile ? '1.5rem' : '2.5rem',
+              flexWrap: 'wrap',
+              marginBottom: '2rem',
+              opacity: 0.7
+            }}
+          >
+            {brands.map((brand, index) => (
+              <motion.img
+                key={brand.name}
+                src={brand.src}
+                alt={brand.name}
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.8 + index * 0.1, duration: 0.5 }}
+                whileHover={{ opacity: 1, scale: 1.1, filter: 'brightness(1.2)' }}
+                style={{
+                  height: mobile ? '28px' : '36px',
+                  width: 'auto',
+                  filter: 'grayscale(100%) brightness(0.7)',
+                  transition: 'filter 0.3s ease, transform 0.3s ease',
+                  cursor: 'default'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.filter = 'grayscale(0%) brightness(1)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.filter = 'grayscale(100%) brightness(0.7)';
+                }}
+              />
+            ))}
+          </motion.div>
 
           <motion.p
             variants={itemVariants}
