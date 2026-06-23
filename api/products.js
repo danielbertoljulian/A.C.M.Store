@@ -2,6 +2,9 @@ import { neon } from '@neondatabase/serverless';
 
 function getDb() {
   const url = process.env.DATABASE_URL || process.env.POSTGRES_URL || process.env.NEON_DATABASE_URL;
+  if (!url) {
+    throw new Error('DATABASE_URL, POSTGRES_URL ou NEON_DATABASE_URL nao configurada em Production.');
+  }
   return neon(url);
 }
 
@@ -51,10 +54,45 @@ async function saveProductImages(db, productId, imageUrls) {
 }
 
 export async function GET() {
-  const db = getDb();
   try {
+    const db = getDb();
+    await ensureTable(db);
     const data = await db`SELECT * FROM products ORDER BY sort_order ASC, created_at ASC`;
-    return new Response(JSON.stringify(data), {
+
+    let wholesaleExported = [];
+    try {
+      const ws = await db`SELECT * FROM wholesale_products WHERE export_to_retail = true AND active = true ORDER BY sort_order ASC, created_at ASC`;
+      wholesaleExported = ws.map(p => ({
+        id: `ws_${p.id}`,
+        name: p.name,
+        slug: p.slug,
+        brand: p.brand,
+        categories: p.categories,
+        image: p.image,
+        images: p.images,
+        price: p.price_varejo || p.price_wholesale || '',
+        off: p.off,
+        colors: p.colors,
+        width: '',
+        height: '',
+        depth: '',
+        instagram_video: '',
+        sort_order: p.sort_order,
+        is_wholesale_export: true,
+        wholesale_id: p.id,
+        price_wholesale: p.price_wholesale,
+        price_varejo: p.price_varejo,
+        description: p.description,
+        sizes: p.sizes,
+        min_quantity: p.min_quantity,
+        grade_info: p.grade_info,
+        stock_status: p.stock_status
+      }));
+    } catch {}
+
+    const merged = [...data, ...wholesaleExported].sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
+
+    return new Response(JSON.stringify(merged), {
       status: 200,
       headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate', 'Pragma': 'no-cache', 'Vary': 'Accept-Encoding' }
     });
@@ -66,8 +104,8 @@ export async function GET() {
 export async function POST(req) {
   const { isAdmin } = await import('./_auth.js');
   if (!(await isAdmin(req))) return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
-  const db = getDb();
   try {
+    const db = getDb();
     await ensureTable(db);
     const body = await req.json();
     const allIds = await db`SELECT id FROM products WHERE id ~ '^[0-9]+$'`;
@@ -106,8 +144,8 @@ export async function POST(req) {
 export async function PUT(req) {
   const { isAdmin } = await import('./_auth.js');
   if (!(await isAdmin(req))) return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
-  const db = getDb();
   try {
+    const db = getDb();
     await ensureTable(db);
     const body = await req.json();
     const imagesVal = Array.isArray(body.images) ? JSON.stringify(body.images) : (body.images || '[]');
@@ -141,8 +179,8 @@ export async function PUT(req) {
 export async function DELETE(req) {
   const { isAdmin } = await import('./_auth.js');
   if (!(await isAdmin(req))) return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
-  const db = getDb();
   try {
+    const db = getDb();
     const url = new URL(req.url);
     const id = url.searchParams.get('id');
     await db`DELETE FROM product_images WHERE product_id = ${String(id)}`;

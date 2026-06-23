@@ -21,6 +21,30 @@ function isValidSrc(src) {
   return src.startsWith('data:image/') || src.startsWith('http') || src.startsWith('/');
 }
 
+const PRODUCTS_CACHE_KEY = 'acm_products_cache';
+const PRODUCTS_CACHE_MAX_LENGTH = 750000;
+
+function readCachedProducts() {
+  try {
+    const cached = sessionStorage.getItem(PRODUCTS_CACHE_KEY);
+    const parsed = cached ? JSON.parse(cached) : [];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeCachedProducts(data) {
+  try {
+    const serialized = JSON.stringify(data);
+    if (serialized.length <= PRODUCTS_CACHE_MAX_LENGTH) {
+      sessionStorage.setItem(PRODUCTS_CACHE_KEY, serialized);
+    } else {
+      sessionStorage.removeItem(PRODUCTS_CACHE_KEY);
+    }
+  } catch {}
+}
+
 const Products = ({ onSelectProduct, filterCategory, addToCart }) => {
   const [mobile, setMobile] = useState(window.innerWidth <= 768);
   useEffect(() => {
@@ -28,7 +52,8 @@ const Products = ({ onSelectProduct, filterCategory, addToCart }) => {
     window.addEventListener('resize', handler);
     return () => window.removeEventListener('resize', handler);
   }, []);
-  const [products, setProducts] = useState([]);
+  const [products, setProducts] = useState(() => readCachedProducts());
+  const [loadingProducts, setLoadingProducts] = useState(() => products.length === 0);
   const [category, setCategory] = useState(filterCategory || 'all');
   const [brand, setBrand] = useState('');
   const [search, setSearch] = useState('');
@@ -53,8 +78,14 @@ const Products = ({ onSelectProduct, filterCategory, addToCart }) => {
     fetched.current = true;
     fetch('/api/products?t=' + Date.now())
       .then(r => r.ok ? r.json() : null)
-      .then(data => { if (data && data.length) setProducts(data); })
-      .catch(err => console.error('Erro ao carregar produtos:', err));
+      .then(data => {
+        if (data && data.length) {
+          setProducts(data);
+          writeCachedProducts(data);
+        }
+      })
+      .catch(err => console.error('Erro ao carregar produtos:', err))
+      .finally(() => setLoadingProducts(false));
     fetch('/api/categories')
       .then(r => r.ok ? r.json() : null)
       .then(data => { if (Array.isArray(data) && data.length) setCategoryList(data.map(c => ({ name: c.name, slug: c.slug }))); })
@@ -66,7 +97,12 @@ const Products = ({ onSelectProduct, filterCategory, addToCart }) => {
       if (!document.hidden) {
         fetch('/api/products?t=' + Date.now())
           .then(r => r.ok ? r.json() : null)
-          .then(data => { if (data && data.length) setProducts(data); })
+          .then(data => {
+            if (data && data.length) {
+              setProducts(data);
+              writeCachedProducts(data);
+            }
+          })
           .catch(err => console.error('Erro ao recarregar produtos:', err));
       }
     };
@@ -139,14 +175,15 @@ const Products = ({ onSelectProduct, filterCategory, addToCart }) => {
           </select>
           <input type="text" placeholder="Buscar produto..." value={search} onChange={handleSearch} style={{ background: '#15181C', border: '1px solid #2A2D33', padding: '0.5rem 1rem', color: '#F5F5F0', borderRadius: '8px', fontSize: '0.85rem', maxWidth: '250px' }} />
         </motion.div>
-        {paginated.length === 0 && <p style={{ textAlign: 'center', color: 'var(--color-text-muted)' }}>Nenhum produto encontrado.</p>}
+        {loadingProducts && paginated.length === 0 && <p style={{ textAlign: 'center', color: 'var(--color-text-muted)' }}>Carregando produtos...</p>}
+        {!loadingProducts && paginated.length === 0 && <p style={{ textAlign: 'center', color: 'var(--color-text-muted)' }}>Nenhum produto encontrado.</p>}
         <motion.div
           variants={containerVariants}
           initial="hidden"
           animate="visible"
           style={{ display: 'grid', gridTemplateColumns: mobile ? 'repeat(2, 1fr)' : 'repeat(auto-fill, minmax(240px, 1fr))', gap: '1.5rem' }}
         >
-          {paginated.map(product => (
+          {paginated.map((product, index) => (
               <motion.div
                 key={product.id}
                 data-pid={product.id}
@@ -173,7 +210,9 @@ const Products = ({ onSelectProduct, filterCategory, addToCart }) => {
                           alt={product.name}
                           whileHover={{ scale: 1.08 }}
                           style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.3s ease', background: '#111315' }}
-                          loading="lazy"
+                          loading={index < 4 ? 'eager' : 'lazy'}
+                          fetchPriority={index < 4 ? 'high' : 'auto'}
+                          decoding="async"
                           onError={e => { e.currentTarget.style.display = 'none'; }}
                         />
                       : <span style={{ color: '#aaa', fontSize: '0.75rem' }}>Sem imagem</span>;

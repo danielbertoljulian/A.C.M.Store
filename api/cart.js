@@ -2,6 +2,9 @@ import { neon } from '@neondatabase/serverless';
 
 function getDb() {
   const url = process.env.DATABASE_URL || process.env.POSTGRES_URL || process.env.NEON_DATABASE_URL;
+  if (!url) {
+    throw new Error('DATABASE_URL, POSTGRES_URL ou NEON_DATABASE_URL nao configurada em Production.');
+  }
   return neon(url);
 }
 
@@ -27,8 +30,9 @@ function getSessionId(req) {
 }
 
 export async function GET(req) {
-  const db = getDb();
   try {
+    const db = getDb();
+    await ensureTable(db);
     const sessionId = getSessionId(req);
     const rows = await db`SELECT items FROM carts WHERE session_id = ${sessionId}`;
     const items = rows.length > 0 ? JSON.parse(rows[0].items || '[]') : [];
@@ -39,8 +43,8 @@ export async function GET(req) {
 }
 
 export async function POST(req) {
-  const db = getDb();
   try {
+    const db = getDb();
     await ensureTable(db);
     const sessionId = getSessionId(req);
     const body = await req.json();

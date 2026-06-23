@@ -102,21 +102,23 @@ const Hero = () => {
       paddingTop: '60px',
       paddingBottom: '40px'
     }}>
-      <LightRays
-        raysOrigin="top-center"
-        raysColor="#D6B56D"
-        raysSpeed={0.8}
-        lightSpread={0.5}
-        rayLength={3}
-        followMouse={true}
-        mouseInfluence={0.1}
-        noiseAmount={0}
-        distortion={0}
-        className="custom-rays"
-        pulsating={false}
-        fadeDistance={1}
-        saturation={1}
-      />
+      {!mobile && (
+        <LightRays
+          raysOrigin="top-center"
+          raysColor="#D6B56D"
+          raysSpeed={0.8}
+          lightSpread={0.5}
+          rayLength={3}
+          followMouse={true}
+          mouseInfluence={0.1}
+          noiseAmount={0}
+          distortion={0}
+          className="custom-rays"
+          pulsating={false}
+          fadeDistance={1}
+          saturation={1}
+        />
+      )}
 
       <div className="container" style={{
         display: 'flex',

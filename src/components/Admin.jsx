@@ -1,6 +1,10 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import ArtGenerator from './ArtGenerator';
 import BudgetGenerator from './BudgetGenerator';
+import WholesaleBudget from './WholesaleBudget';
+import WholesaleArt from './WholesaleArt';
+import WholesaleProductsAdmin from './WholesaleProductsAdmin';
+import WholesaleRequestsAdmin from './WholesaleRequestsAdmin';
 
 const API = '/api/products';
 const CATEGORIES_API = '/api/categories';
@@ -35,8 +39,10 @@ function Admin() {
   const [dragIdx, setDragIdx] = useState(null);
   const [categories, setCategories] = useState([]);
   const [showCategoryManager, setShowCategoryManager] = useState(false);
-  const [newCategoryName, setNewCategoryName] = useState('');
   const [categoryError, setCategoryError] = useState('');
+  const [categoryForm, setCategoryForm] = useState({ name: '', description: '', image: '' });
+  const [editingCategoryId, setEditingCategoryId] = useState(null);
+  const [uploadingCategoryId, setUploadingCategoryId] = useState(null);
   const [dragOverIdx, setDragOverIdx] = useState(null);
   const [tab, setTab] = useState('produtos');
   const [sharedId, setSharedId] = useState(null);
@@ -75,60 +81,88 @@ function Admin() {
       .catch(() => setSettingsLoaded(true));
   }, [loggedIn]);
 
-  const handleAddCategory = async () => {
-    const name = newCategoryName.trim().toLowerCase();
-    if (!name) { setCategoryError('Digite um nome'); return; }
-    if (categoryList.includes(name)) { setCategoryError('Categoria ja existe'); return; }
-    try {
-      const r = await fetch(CATEGORIES_API, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({ name })
-      });
-      if (r.ok) {
-        setNewCategoryName('');
-        setCategoryError('');
-        fetchCategories();
-      } else {
-        const data = await r.json();
-        setCategoryError(data.error || 'Erro ao adicionar');
-      }
-    } catch (e) { setCategoryError('Erro ao adicionar: ' + e.message); }
+  const resetCategoryForm = () => {
+    setCategoryForm({ name: '', description: '', image: '' });
+    setEditingCategoryId(null);
+    setCategoryError('');
   };
 
-  const handleDeleteCategory = async (cat) => {
-    if (!window.confirm(`Excluir categoria "${cat}"?`)) return;
-    if (categories.length === 0) return;
-    const catObj = categories.find(c => c.name === cat);
-    if (!catObj) return;
+  const startEditCategory = (cat) => {
+    setCategoryForm({
+      name: cat.name || '',
+      description: cat.description || '',
+      image: cat.image || ''
+    });
+    setEditingCategoryId(cat.id);
+    setCategoryError('');
+  };
+
+  const handleSaveCategory = async () => {
+    const name = categoryForm.name.trim().toLowerCase();
+    if (!name) { setCategoryError('Digite um nome'); return; }
+    try {
+      const r = await fetch(CATEGORIES_API, {
+        method: editingCategoryId ? 'PUT' : 'POST',
+        headers,
+        body: JSON.stringify({
+          id: editingCategoryId,
+          name,
+          description: categoryForm.description.trim(),
+          image: categoryForm.image
+        })
+      });
+      if (r.ok) {
+        resetCategoryForm();
+        await fetchCategories();
+        setSuccess(editingCategoryId ? 'Categoria atualizada!' : 'Categoria criada!');
+      } else {
+        const data = await r.json();
+        setCategoryError(data.error || 'Erro ao salvar categoria');
+      }
+    } catch (e) { setCategoryError('Erro ao salvar categoria: ' + e.message); }
+  };
+
+  const handleDeleteCategory = async (catObj) => {
+    if (!window.confirm(`Excluir categoria "${catObj.name}"?`)) return;
     try {
       const r = await fetch(`${CATEGORIES_API}?id=${catObj.id}`, { method: 'DELETE', headers });
-      if (r.ok) fetchCategories();
+      if (r.ok) {
+        if (editingCategoryId === catObj.id) resetCategoryForm();
+        await fetchCategories();
+        setSuccess('Categoria excluida!');
+      } else {
+        const data = await r.json().catch(() => ({}));
+        alert(data.error || 'Erro ao excluir categoria');
+      }
     } catch (e) { alert('Erro: ' + e.message); }
   };
 
-  const handleUpdateCategoryImage = async (catObj, imageUrl) => {
+  const handleUploadCategoryImage = async (file, catObj = null) => {
+    if (!file) return;
+    const uploadId = catObj?.id || 'new';
+    setUploadingCategoryId(uploadId);
     try {
-      const r = await fetch(CATEGORIES_API, {
-        method: 'PUT',
-        headers,
-        body: JSON.stringify({ id: catObj.id, image: imageUrl, description: catObj.description || '' })
-      });
-      if (r.ok) fetchCategories();
-    } catch (e) { alert('Erro ao atualizar imagem: ' + e.message); }
-  };
-
-  const handleUploadCategoryImage = async (catObj, file) => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => {
-        const dataUrl = reader.result;
-        handleUpdateCategoryImage(catObj, dataUrl);
-        resolve(dataUrl);
-      };
-      reader.onerror = () => reject(new Error('Falha ao ler imagem'));
-      reader.readAsDataURL(file);
-    });
+      const imageUrl = await handleUploadImage(file);
+      if (catObj) {
+        const r = await fetch(CATEGORIES_API, {
+          method: 'PUT',
+          headers,
+          body: JSON.stringify({ ...catObj, image: imageUrl })
+        });
+        if (!r.ok) {
+          const data = await r.json().catch(() => ({}));
+          throw new Error(data.error || 'Erro ao atualizar foto');
+        }
+        await fetchCategories();
+        setSuccess('Foto da categoria atualizada!');
+      } else {
+        setCategoryForm(f => ({ ...f, image: imageUrl }));
+      }
+    } catch (e) {
+      setCategoryError('Erro no upload: ' + e.message);
+    } finally {
+      setUploadingCategoryId(null);
+    }
   };
 
   const handleDragStart = (idx) => { setDragIdx(idx); setDragOverIdx(null); };
@@ -281,7 +315,7 @@ function Admin() {
               <button onClick={handleLogout} style={{ background: 'transparent', border: '1px solid #e74c3c', color: '#e74c3c', padding: '0.4rem 0.8rem', borderRadius: '8px', cursor: 'pointer', fontSize: '0.8rem' }}>Sair</button>
             </div>
           </div>
-          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
             {[
               { key: 'produtos', label: 'Produtos' },
               { key: 'relatorios', label: 'Relatorios' },
@@ -292,6 +326,16 @@ function Admin() {
             ].map(t => (
               <button key={t.key} onClick={() => setTab(t.key)} style={{ flex: mobile ? '1' : 'unset', background: tab === t.key ? '#D6B56D' : 'transparent', border: '1px solid #D6B56D', color: tab === t.key ? '#070707' : '#D6B56D', padding: '0.6rem 1rem', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '0.9rem' }}>{t.label}</button>
             ))}
+            <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+              {[
+                { key: 'atacado-produtos', label: 'Atacado' },
+                { key: 'atacado-solicitacoes', label: 'Solicitacoes' },
+                { key: 'atacado-orcamento', label: 'Orc. Atacado' },
+                { key: 'atacado-arte', label: 'Arte Atacado' },
+              ].map(t => (
+                <button key={t.key} onClick={() => setTab(t.key)} style={{ flex: mobile ? '1' : 'unset', background: tab === t.key ? '#25D366' : 'transparent', border: '1px solid #25D366', color: tab === t.key ? '#070707' : '#25D366', padding: '0.6rem 1rem', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '0.9rem' }}>{t.label}</button>
+              ))}
+            </div>
           </div>
         </div>
 
@@ -301,6 +345,14 @@ function Admin() {
           <ArtGenerator mobile={mobile} products={products} />
         ) : tab === 'orcamento' ? (
           <BudgetGenerator mobile={mobile} products={products} />
+        ) : tab === 'atacado-produtos' ? (
+          <WholesaleProductsAdmin mobile={mobile} />
+        ) : tab === 'atacado-solicitacoes' ? (
+          <WholesaleRequestsAdmin mobile={mobile} />
+        ) : tab === 'atacado-orcamento' ? (
+          <WholesaleBudget mobile={mobile} />
+        ) : tab === 'atacado-arte' ? (
+          <WholesaleArt mobile={mobile} />
         ) : tab === 'instagram' ? (
           <InstagramAdminView mobile={mobile} headers={headers} />
         ) : tab === 'ajustes' ? (
@@ -332,7 +384,7 @@ function Admin() {
               <button className="btn-premium" onClick={() => setEditing({})} style={{ fontSize: '0.85rem', padding: '0.5rem 1rem', whiteSpace: 'nowrap' }}>+ Novo Produto</button>
             </div>
 
-            {showCategoryManager && (
+            {showCategoryManager && false && (
               <div className="glass" style={{ padding: '1rem', borderRadius: '12px', marginBottom: '1.5rem', background: '#15181C', border: '1px solid #2A2D33' }}>
                 <h3 style={{ color: 'var(--color-gold)', marginBottom: '0.75rem', fontSize: '0.95rem' }}>Gerenciar Categorias</h3>
                 <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
@@ -381,6 +433,28 @@ function Admin() {
 
             {success && <div style={{ background: '#27ae60', color: 'white', padding: '0.8rem', borderRadius: '8px', marginBottom: '1rem' }}>{success} <button onClick={() => setSuccess('')} style={{ float: 'right', background: 'none', border: 'none', color: 'white', cursor: 'pointer' }}>✕</button></div>}
             {error && <div style={{ background: '#e74c3c', color: 'white', padding: '0.8rem', borderRadius: '8px', marginBottom: '1rem' }}>{error} <button onClick={() => setError('')} style={{ float: 'right', background: 'none', border: 'none', color: 'white', cursor: 'pointer' }}>✕</button></div>}
+
+            {showCategoryManager && (
+              <CategoryManager
+                mobile={mobile}
+                categories={categories}
+                form={categoryForm}
+                setForm={setCategoryForm}
+                error={categoryError}
+                editingId={editingCategoryId}
+                uploadingId={uploadingCategoryId}
+                onSave={handleSaveCategory}
+                onCancel={resetCategoryForm}
+                onEdit={startEditCategory}
+                onDelete={handleDeleteCategory}
+                onUpload={handleUploadCategoryImage}
+                onRemoveImage={async (cat) => {
+                  const r = await fetch(CATEGORIES_API, { method: 'PUT', headers, body: JSON.stringify({ ...cat, image: '' }) });
+                  if (r.ok) fetchCategories();
+                }}
+                onRefresh={() => { fetchCategories(); setSuccess('Categorias atualizadas!'); }}
+              />
+            )}
 
             {editing && (
               <ProductForm product={editing} onSave={handleSave} onUpload={handleUploadImage} onCancel={() => setEditing(null)} mobile={mobile} categories={categoryList} />
@@ -466,6 +540,111 @@ function getFirstImage(p) {
   return p.image || '';
 }
 
+function CategoryManager({
+  mobile,
+  categories,
+  form,
+  setForm,
+  error,
+  editingId,
+  uploadingId,
+  onSave,
+  onCancel,
+  onEdit,
+  onDelete,
+  onUpload,
+  onRemoveImage,
+  onRefresh
+}) {
+  return (
+    <div className="glass" style={{ padding: '1rem', borderRadius: '12px', marginBottom: '1.5rem', background: '#15181C', border: '1px solid #2A2D33' }}>
+      <h3 style={{ color: 'var(--color-gold)', marginBottom: '0.75rem', fontSize: '0.95rem' }}>
+        {editingId ? 'Editar Categoria' : 'Nova Categoria'}
+      </h3>
+
+      <div style={{ display: 'grid', gridTemplateColumns: mobile ? '1fr' : '160px minmax(0, 1fr) minmax(0, 1fr) auto', gap: '0.75rem', marginBottom: '1rem', alignItems: 'end' }}>
+        <div style={{ height: '120px', background: '#111315', border: '1px solid #2A2D33', borderRadius: '8px', overflow: 'hidden', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          {form.image ? (
+            <img src={form.image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          ) : (
+            <span style={{ color: '#666', fontSize: '0.75rem' }}>Sem foto</span>
+          )}
+          <label style={{ position: 'absolute', right: '6px', bottom: '6px', background: 'rgba(0,0,0,0.75)', color: '#D6B56D', padding: '0.25rem 0.5rem', borderRadius: '6px', cursor: 'pointer', fontSize: '0.7rem', border: '1px solid #D6B56D' }}>
+            {uploadingId === 'new' ? 'Enviando...' : 'Foto'}
+            <input type="file" accept="image/*" disabled={uploadingId === 'new'} style={{ display: 'none' }} onChange={e => onUpload(e.target.files?.[0])} />
+          </label>
+        </div>
+
+        <div>
+          <label style={{ color: 'var(--color-text-muted)', fontSize: '0.75rem', display: 'block', marginBottom: '0.3rem' }}>Nome</label>
+          <input type="text" placeholder="Ex: camisetas" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} onKeyDown={e => e.key === 'Enter' && onSave()} style={inputStyle} />
+        </div>
+
+        <div>
+          <label style={{ color: 'var(--color-text-muted)', fontSize: '0.75rem', display: 'block', marginBottom: '0.3rem' }}>Descricao</label>
+          <input type="text" placeholder="Texto curto da categoria" value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} style={inputStyle} />
+        </div>
+
+        <div style={{ display: 'flex', gap: '0.5rem', justifyContent: mobile ? 'stretch' : 'flex-end' }}>
+          {editingId && (
+            <button onClick={onCancel} style={{ background: 'transparent', border: '1px solid #2A2D33', color: '#F5F5F0', padding: '0.55rem 0.9rem', borderRadius: '8px', cursor: 'pointer', fontSize: '0.8rem' }}>
+              Cancelar
+            </button>
+          )}
+          <button className="btn-premium" onClick={onSave} style={{ padding: '0.55rem 1rem', fontSize: '0.85rem', whiteSpace: 'nowrap', flex: mobile ? 1 : 'unset' }}>
+            {editingId ? 'Salvar' : 'Adicionar'}
+          </button>
+        </div>
+      </div>
+
+      {error && <p style={{ color: '#e74c3c', fontSize: '0.8rem', marginBottom: '0.75rem' }}>{error}</p>}
+
+      <div style={{ display: 'grid', gridTemplateColumns: mobile ? '1fr' : 'repeat(auto-fill, minmax(240px, 1fr))', gap: '0.75rem' }}>
+        {categories.length === 0 && (
+          <p style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem', gridColumn: '1 / -1', margin: 0 }}>Nenhuma categoria cadastrada ainda.</p>
+        )}
+
+        {categories.map(cat => (
+          <div key={cat.id} style={{ background: '#1a1d21', padding: '0.75rem', borderRadius: '8px', border: editingId === cat.id ? '1px solid #D6B56D' : '1px solid #2A2D33' }}>
+            <div style={{ position: 'relative', width: '100%', height: '130px', background: '#111315', borderRadius: '6px', overflow: 'hidden', marginBottom: '0.65rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              {cat.image ? (
+                <img src={cat.image} alt={cat.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              ) : (
+                <span style={{ color: '#666', fontSize: '0.75rem' }}>Sem foto</span>
+              )}
+              <label style={{ position: 'absolute', bottom: '5px', right: '5px', background: 'rgba(0,0,0,0.75)', color: '#D6B56D', padding: '0.22rem 0.5rem', borderRadius: '4px', cursor: 'pointer', fontSize: '0.65rem', border: '1px solid #D6B56D' }}>
+                {uploadingId === cat.id ? 'Enviando...' : 'Trocar foto'}
+                <input type="file" accept="image/*" disabled={uploadingId === cat.id} style={{ display: 'none' }} onChange={e => onUpload(e.target.files?.[0], cat)} />
+              </label>
+              {cat.image && (
+                <button onClick={() => onRemoveImage(cat)} style={{ position: 'absolute', top: '5px', right: '5px', background: 'rgba(0,0,0,0.75)', color: '#e74c3c', padding: '0.15rem 0.4rem', borderRadius: '4px', cursor: 'pointer', fontSize: '0.6rem', border: '1px solid #e74c3c' }}>
+                  Remover
+                </button>
+              )}
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: '0.75rem', alignItems: 'flex-start' }}>
+              <div style={{ minWidth: 0 }}>
+                <strong style={{ color: '#F5F5F0', fontSize: '0.9rem', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{cat.name}</strong>
+                {cat.description && <small style={{ color: 'var(--color-text-muted)', fontSize: '0.72rem' }}>{cat.description}</small>}
+              </div>
+              <div style={{ display: 'flex', gap: '0.35rem', flexShrink: 0 }}>
+                <button onClick={() => onEdit(cat)} style={{ background: 'transparent', border: '1px solid #2A2D33', color: '#F5F5F0', padding: '0.3rem 0.55rem', borderRadius: '6px', cursor: 'pointer', fontSize: '0.72rem' }}>Editar</button>
+                <button onClick={() => onDelete(cat)} style={{ background: 'transparent', border: '1px solid #e74c3c', color: '#e74c3c', padding: '0.3rem 0.55rem', borderRadius: '6px', cursor: 'pointer', fontSize: '0.72rem' }}>Excluir</button>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.75rem', gap: '1rem', flexWrap: 'wrap' }}>
+        <p style={{ color: 'var(--color-text-muted)', fontSize: '0.7rem', margin: 0 }}>As categorias cadastradas aqui aparecem nos filtros e no cadastro dos produtos.</p>
+        <button className="btn-premium" onClick={onRefresh} style={{ padding: '0.5rem 1.5rem', fontSize: '0.85rem' }}>Atualizar</button>
+      </div>
+    </div>
+  );
+}
+
 function getImageList(p) {
   if (p.images) {
     try {
@@ -481,11 +660,44 @@ const categoryCheckboxes = defaultCategories;
 function ProductForm({ product, onSave, onUpload, onCancel, mobile, categories }) {
   const [form, setForm] = useState(product);
   const [uploading, setUploading] = useState(false);
+  const [showImport, setShowImport] = useState(false);
+  const [wholesaleProducts, setWholesaleProducts] = useState([]);
+  const [importing, setImporting] = useState(false);
   const formRef = useRef(null);
   useEffect(() => { formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, []);
 
   const imageList = getImageList(form);
   const categoryOpts = categories && categories.length > 0 ? categories : categoryCheckboxes;
+
+  const loadWholesaleProducts = async () => {
+    try {
+      const r = await fetch('/api/wholesale_products');
+      if (r.ok) {
+        const data = await r.json();
+        setWholesaleProducts(Array.isArray(data) ? data : []);
+      }
+    } catch {}
+  };
+
+  const importFromWholesale = (wp) => {
+    const wsImages = (() => { try { const a = JSON.parse(wp.images); return Array.isArray(a) ? a : []; } catch { return []; } })();
+    const allImages = wp.image ? [wp.image, ...wsImages.filter(i => i !== wp.image)] : wsImages;
+    setForm(f => ({
+      ...f,
+      name: wp.name || f.name,
+      slug: wp.slug || f.slug,
+      brand: wp.brand || f.brand,
+      categories: wp.categories || f.categories,
+      image: wp.image || f.image,
+      images: JSON.stringify(allImages),
+      price: wp.price_varejo || wp.price_wholesale || f.price,
+      off: wp.off || f.off,
+      colors: wp.colors || f.colors,
+      width: wp.grade_info || f.width || ''
+    }));
+    setShowImport(false);
+    setSuccess('Produto importado do atacado! Revise os dados e salve.');
+  };
 
   const handleFilesUpload = async (e) => {
     const files = Array.from(e.target.files);
@@ -511,7 +723,41 @@ function ProductForm({ product, onSave, onUpload, onCancel, mobile, categories }
 
   return (
     <div ref={formRef} className="glass" style={{ padding: '1.5rem', borderRadius: '12px', marginBottom: '1.5rem', background: '#15181C', border: '1px solid #2A2D33' }}>
-      <h3 style={{ color: 'var(--color-gold)', marginBottom: '1rem' }}>{product.id ? 'Editar Produto' : 'Novo Produto'}</h3>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '8px' }}>
+        <h3 style={{ color: 'var(--color-gold)', margin: 0 }}>{product.id ? 'Editar Produto' : 'Novo Produto'}</h3>
+        {!product.id && (
+          <button onClick={async () => { setShowImport(!showImport); if (!showImport && wholesaleProducts.length === 0) await loadWholesaleProducts(); }}
+            style={{ background: showImport ? '#25D366' : 'transparent', border: '1px solid #25D366', color: showImport ? '#070707' : '#25D366', padding: '6px 14px', borderRadius: '8px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600 }}>
+            Importar do Atacado
+          </button>
+        )}
+      </div>
+
+      {showImport && (
+        <div style={{ background: '#070707', border: '1px solid #25D366', borderRadius: '8px', padding: '1rem', marginBottom: '1rem', maxHeight: '250px', overflowY: 'auto' }}>
+          <p style={{ color: '#25D366', fontSize: '0.8rem', marginBottom: '8px', fontWeight: 600 }}>Selecione um produto atacado para importar:</p>
+          {wholesaleProducts.length === 0 ? (
+            <p style={{ color: '#A7A7A0', fontSize: '0.8rem' }}>Nenhum produto atacado encontrado.</p>
+          ) : (
+            wholesaleProducts.map(wp => {
+              const wpImg = (() => { try { const a = JSON.parse(wp.images); return Array.isArray(a) && a.length > 0 ? a[0] : wp.image; } catch { return wp.image; } })();
+              return (
+                <div key={wp.id} onClick={() => importFromWholesale(wp)}
+                  style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px', borderRadius: '6px', cursor: 'pointer', border: '1px solid #2A2D33', marginBottom: '6px', transition: 'border-color 0.2s' }}
+                  onMouseEnter={e => e.currentTarget.style.borderColor = '#25D366'}
+                  onMouseLeave={e => e.currentTarget.style.borderColor = '#2A2D33'}>
+                  {wpImg && <img src={wpImg} alt="" style={{ width: '40px', height: '40px', objectFit: 'contain', borderRadius: '4px', background: '#15181C' }} />}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <span style={{ color: '#F5F5F0', fontSize: '0.8rem', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{wp.name}</span>
+                    <span style={{ color: '#A7A7A0', fontSize: '0.7rem' }}>{wp.brand} {wp.price_varejo ? `| R$ ${wp.price_varejo}` : ''}</span>
+                  </div>
+                  <span style={{ color: '#25D366', fontSize: '0.7rem', fontWeight: 600, whiteSpace: 'nowrap' }}>Importar</span>
+                </div>
+              );
+            })
+          )}
+        </div>
+      )}
       <div style={{ display: 'grid', gridTemplateColumns: mobile ? '1fr' : '1fr 1fr', gap: '1rem' }}>
         <input placeholder="Nome *" value={form.name || ''} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} style={inputStyle} />
         <input placeholder="Slug (url amigavel)" value={form.slug || ''} onChange={e => setForm(f => ({ ...f, slug: e.target.value }))} style={inputStyle} />

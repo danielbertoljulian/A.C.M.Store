@@ -10,10 +10,12 @@ import Contact from './components/Contact'
 import Footer from './components/Footer'
 import Admin from './components/Admin'
 import CartModal from './components/CartModal'
+import WholesaleShowcase from './components/WholesaleShowcase'
 import './App.css'
 
 function App() {
   const isAdmin = window.location.pathname.toLowerCase() === '/admin';
+  const isWholesale = window.location.pathname.toLowerCase() === '/atacado';
 
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [filterCategory, setFilterCategory] = useState(null);
@@ -122,6 +124,7 @@ function App() {
   const handleCategoryClick = (category) => setFilterCategory(category);
 
   if (isAdmin) return <Admin />;
+  if (isWholesale) return <WholesaleShowcase addToCart={addToCart} />;
 
   return (
     <div className="App">

@@ -59,6 +59,7 @@ const Navbar = ({ cartCount, onCartClick }) => {
     { href: 'home', label: 'Home' },
     { href: 'produtos', label: 'Produtos' },
     { href: 'categorias', label: 'Categorias' },
+    { href: '/atacado', label: 'Atacado' },
     { href: 'sobre', label: 'Sobre Nos' },
     { href: 'contato', label: 'Contato' },
   ];
@@ -122,7 +123,7 @@ const Navbar = ({ cartCount, onCartClick }) => {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.1 + 0.3 }}
                 >
-                  <a href={`#${item.href}`} className="nav-link">{item.label}</a>
+                  <a href={item.href.startsWith('/') ? item.href : `#${item.href}`} className="nav-link">{item.label}</a>
                 </motion.li>
               ))}
             </ul>

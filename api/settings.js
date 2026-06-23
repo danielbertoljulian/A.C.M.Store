@@ -7,7 +7,7 @@ config({ path: '.env.local', quiet: true });
 function getDb() {
   const url = process.env.DATABASE_URL || process.env.POSTGRES_URL || process.env.NEON_DATABASE_URL;
   if (!url) {
-    throw new Error('DATABASE_URL is not configured. Set DATABASE_URL in .env.local and restart the dev server.');
+    throw new Error('DATABASE_URL, POSTGRES_URL ou NEON_DATABASE_URL nao configurada em Production.');
   }
   return neon(url);
 }
@@ -25,8 +25,9 @@ function json(data, status = 200) {
 }
 
 export async function GET(req) {
-  const db = getDb();
   try {
+    const db = getDb();
+    await ensureTable(db);
     const url = new URL(req.url);
     const key = url.searchParams.get('key');
     if (key) {
@@ -46,8 +47,8 @@ export async function GET(req) {
 
 export async function POST(req) {
   if (!(await isAdmin(req))) return json({ error: 'Unauthorized' }, 401);
-  const db = getDb();
   try {
+    const db = getDb();
     await ensureTable(db);
     const body = await req.json();
     if (body.key && body.value !== undefined) {

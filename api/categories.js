@@ -2,6 +2,9 @@ import { neon } from '@neondatabase/serverless';
 
 function getDb() {
   const url = process.env.DATABASE_URL || process.env.POSTGRES_URL || process.env.NEON_DATABASE_URL;
+  if (!url) {
+    throw new Error('DATABASE_URL, POSTGRES_URL ou NEON_DATABASE_URL nao configurada em Production.');
+  }
   return neon(url);
 }
 
@@ -19,8 +22,9 @@ async function ensureTable(db) {
 }
 
 export async function GET() {
-  const db = getDb();
   try {
+    const db = getDb();
+    await ensureTable(db);
     const data = await db`SELECT * FROM categories ORDER BY name ASC`;
     return new Response(JSON.stringify(data), {
       status: 200,
@@ -34,8 +38,8 @@ export async function GET() {
 export async function POST(req) {
   const { isAdmin } = await import('./_auth.js');
   if (!(await isAdmin(req))) return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
-  const db = getDb();
   try {
+    const db = getDb();
     await ensureTable(db);
     const body = await req.json();
     if (!body.name || !body.name.trim()) {
@@ -59,16 +63,37 @@ export async function POST(req) {
 export async function PUT(req) {
   const { isAdmin } = await import('./_auth.js');
   if (!(await isAdmin(req))) return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
-  const db = getDb();
   try {
+    const db = getDb();
     await ensureTable(db);
     const body = await req.json();
     if (!body.id) {
       return new Response(JSON.stringify({ error: 'ID e obrigatorio' }), { status: 400 });
     }
-    const image = body.image !== undefined ? body.image : '';
-    const description = body.description !== undefined ? body.description : '';
-    const updated = await db`UPDATE categories SET image = ${image}, description = ${description} WHERE id = ${parseInt(body.id)} RETURNING *`;
+    const id = parseInt(body.id);
+    const currentRows = await db`SELECT * FROM categories WHERE id = ${id}`;
+    if (!currentRows.length) {
+      return new Response(JSON.stringify({ error: 'Categoria nao encontrada' }), { status: 404 });
+    }
+
+    const current = currentRows[0];
+    const name = body.name !== undefined ? String(body.name).trim().toLowerCase() : current.name;
+    const slug = body.slug !== undefined
+      ? String(body.slug).trim().toLowerCase().replace(/\s+/g, '-')
+      : (body.name !== undefined ? name.replace(/\s+/g, '-') : current.slug);
+    const image = body.image !== undefined ? body.image : current.image;
+    const description = body.description !== undefined ? body.description : current.description;
+
+    if (!name) {
+      return new Response(JSON.stringify({ error: 'Nome e obrigatorio' }), { status: 400 });
+    }
+
+    const conflict = await db`SELECT id FROM categories WHERE (name = ${name} OR slug = ${slug}) AND id <> ${id}`;
+    if (conflict.length > 0) {
+      return new Response(JSON.stringify({ error: 'Categoria ja existe' }), { status: 409 });
+    }
+
+    const updated = await db`UPDATE categories SET name = ${name}, slug = ${slug}, image = ${image}, description = ${description} WHERE id = ${id} RETURNING *`;
     if (!updated.length) {
       return new Response(JSON.stringify({ error: 'Categoria nao encontrada' }), { status: 404 });
     }
@@ -81,8 +106,8 @@ export async function PUT(req) {
 export async function DELETE(req) {
   const { isAdmin } = await import('./_auth.js');
   if (!(await isAdmin(req))) return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
-  const db = getDb();
   try {
+    const db = getDb();
     await ensureTable(db);
     const url = new URL(req.url);
     const id = url.searchParams.get('id');
